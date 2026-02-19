@@ -520,13 +520,13 @@
           <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></div>
           <span style="font-size:14px;font-weight:600;color:var(--accent)">Connected to Dropbox</span>
         </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="cloudLastSync">Encrypted backups upload hourly and auto-delete after 48 hours.</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="cloudLastSync">Readable text backups upload hourly and auto-delete after 48 hours.</div>
         <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:8px;font-size:13px" onclick="cloudUploadNow()">Upload Now</button>
         <button class="btn btn-secondary" style="width:100%;justify-content:center;font-size:13px;color:var(--danger);border-color:var(--danger-light)" onclick="cloudDisconnect()">Disconnect Dropbox</button>
       </div>
       <div id="cloudSetup">
         <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px">
-          Automatically backs up encrypted data to Dropbox every hour. Requires one-time setup:
+          Automatically backs up a readable text file to Dropbox every hour. Open it right in Dropbox to see your entries and timer states. Requires one-time setup:
         </div>
         <details style="margin-bottom:14px">
           <summary style="font-size:13px;font-weight:600;color:var(--blue);cursor:pointer;margin-bottom:8px">Setup Instructions (3 min)</summary>
@@ -544,9 +544,6 @@
         </details>
         <label style="font-size:13px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px">Dropbox App Key</label>
         <input type="text" id="cloudAppKey" placeholder="Paste your Dropbox App Key" autocomplete="off">
-        <label style="font-size:13px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px">Cloud Backup Passphrase</label>
-        <input type="password" id="cloudPassphrase" placeholder="Passphrase for cloud encryption" autocomplete="off">
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Stored locally. Used to encrypt every cloud upload.</div>
         <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="cloudConnect()">Connect Dropbox</button>
       </div>
     </div>
@@ -1726,15 +1723,13 @@ function showCloudStatus(msg, type) {
 // Connect flow
 async function cloudConnect() {
   const appKey = document.getElementById('cloudAppKey').value.trim();
-  const passphrase = document.getElementById('cloudPassphrase').value;
   if (!appKey) { showCloudStatus('Enter your Dropbox App Key.', 'error'); return; }
-  if (!passphrase || passphrase.length < 4) { showCloudStatus('Enter a passphrase (at least 4 characters).', 'error'); return; }
 
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = await generateCodeChallenge(codeVerifier);
 
   // Store pending auth state
-  saveData('tk_cloud_pending', { appKey, passphrase, codeVerifier });
+  saveData('tk_cloud_pending', { appKey, codeVerifier });
 
   // Open Dropbox auth in new tab
   const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${encodeURIComponent(appKey)}&response_type=code&code_challenge=${encodeURIComponent(codeChallenge)}&code_challenge_method=S256&token_access_type=offline`;
@@ -1791,12 +1786,11 @@ async function cloudFinishConnect() {
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
       tokenExpiry: Date.now() + (tokens.expires_in * 1000),
-      passphrase: pending.passphrase,
       lastUpload: 0
     });
 
     localStorage.removeItem('tk_cloud_pending');
-    showCloudStatus('Connected! Hourly encrypted backups are now active.', 'success');
+    showCloudStatus('Connected! Hourly readable backups are now active.', 'success');
     renderCloudUI();
 
     // Do an immediate upload
@@ -1852,28 +1846,93 @@ async function getValidAccessToken() {
   return cfg.accessToken;
 }
 
-// Upload encrypted backup to Dropbox
+// Upload readable backup to Dropbox
 async function cloudUploadBackup() {
   const cfg = getCloudConfig();
-  if (!cfg || !cfg.passphrase) return false;
+  if (!cfg) return false;
 
   const token = await getValidAccessToken();
   if (!token) return false;
 
-  const data = JSON.stringify({
-    matters: matters,
-    timers: timers,
-    entries: entries,
-    exportedAt: new Date().toISOString(),
-    version: 1
-  });
-
-  const encrypted = await encryptData(data, cfg.passphrase);
-
-  // File path with timestamp: /backup-2026-02-18-14.tkbackup
+  // Build readable text report
   const now = new Date();
+  let lines = [];
+  lines.push('TIMEKEEPER BACKUP');
+  lines.push(`Exported: ${now.toLocaleString()}`);
+  lines.push('='.repeat(50));
+
+  // Active timers
+  const activeTimers = Object.keys(timers).filter(id => {
+    const t = timers[id];
+    return t.running || (t.intervals && t.intervals.length > 0);
+  });
+  if (activeTimers.length > 0) {
+    lines.push('');
+    lines.push('ACTIVE TIMERS');
+    lines.push('-'.repeat(50));
+    activeTimers.forEach(id => {
+      const t = timers[id];
+      const m = matters.find(x => x.id === id);
+      if (!m) return;
+      const el = getElapsed(id);
+      const inc = m.increment || 0.10;
+      const numberLine = [m.clientNumber, m.matterNumber].filter(Boolean).join('-');
+      lines.push(`Matter: ${numberLine || 'No number'}`);
+      lines.push(`  Status: ${t.running ? '▶ RUNNING' : '⏸ Paused'}`);
+      lines.push(`  Elapsed: ${fmt(el)} | Rounded: ${fmtRound(el, inc)} h`);
+      if (t.narrative) lines.push(`  Narrative: ${t.narrative}`);
+      if (t.intervals && t.intervals.length > 0) {
+        t.intervals.forEach(iv => {
+          const s = new Date(iv.start).toLocaleTimeString();
+          const e = iv.end ? new Date(iv.end).toLocaleTimeString() : 'now';
+          lines.push(`  Interval: ${s} – ${e}`);
+        });
+      }
+      lines.push('');
+    });
+  }
+
+  // Saved entries grouped by date
+  if (entries.length > 0) {
+    lines.push('');
+    lines.push('SAVED ENTRIES');
+    lines.push('-'.repeat(50));
+    // Group by date
+    const byDate = {};
+    entries.forEach(e => {
+      const d = new Date(e.timestamp);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      if (!byDate[key]) byDate[key] = [];
+      byDate[key].push(e);
+    });
+    Object.keys(byDate).sort().reverse().forEach(dateKey => {
+      const d = new Date(dateKey + 'T12:00:00');
+      lines.push(`\n${d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`);
+      let dayTotal = 0;
+      byDate[dateKey].forEach(e => {
+        const hrs = parseFloat(e.hours) || 0;
+        dayTotal += hrs;
+        lines.push(`  ${e.billingNumber || 'No number'}${e.taskLabel ? ' [' + e.taskLabel + ']' : ''} | ${e.hours} h`);
+        if (e.narrative) lines.push(`  Narrative: ${e.narrative}`);
+        lines.push('');
+      });
+      lines.push(`  Day Total: ${dayTotal.toFixed(2)} h`);
+    });
+  }
+
+  // Summary
+  const totalHrs = entries.reduce((sum, e) => sum + (parseFloat(e.hours) || 0), 0);
+  lines.push('');
+  lines.push('='.repeat(50));
+  lines.push(`Total Saved Entries: ${entries.length}`);
+  lines.push(`Total Hours: ${totalHrs.toFixed(2)}`);
+  lines.push(`Matters: ${matters.length}`);
+
+  const text = lines.join('\n');
+
+  // File path with timestamp
   const dateStr = now.toISOString().slice(0, 13).replace(/T/, '-');
-  const path = `/backup-${dateStr}.tkbackup`;
+  const path = `/timekeeper-backup-${dateStr}.txt`;
 
   const resp = await fetch('https://content.dropboxapi.com/2/files/upload', {
     method: 'POST',
@@ -1886,7 +1945,7 @@ async function cloudUploadBackup() {
         mute: true
       })
     },
-    body: encrypted
+    body: new TextEncoder().encode(text)
   });
 
   if (!resp.ok) {
@@ -1924,9 +1983,9 @@ async function cloudPruneOld() {
     const toDelete = [];
 
     (listing.entries || []).forEach(entry => {
-      if (entry['.tag'] === 'file' && entry.name.startsWith('backup-') && entry.name.endsWith('.tkbackup')) {
-        // Parse date from filename: backup-2026-02-18-14.tkbackup
-        const match = entry.name.match(/backup-(\d{4})-(\d{2})-(\d{2})-(\d{2})/);
+      if (entry['.tag'] === 'file' && (entry.name.startsWith('timekeeper-backup-') || entry.name.startsWith('backup-'))) {
+        // Parse date from filename
+        const match = entry.name.match(/(?:timekeeper-)?backup-(\d{4})-(\d{2})-(\d{2})-(\d{2})/);
         if (match) {
           const fileDate = new Date(`${match[1]}-${match[2]}-${match[3]}T${match[4]}:00:00Z`);
           if (fileDate < cutoff) {
