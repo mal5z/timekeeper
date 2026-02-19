@@ -241,11 +241,12 @@
     border-top: 1px solid #E8E5DF;
   }
   .narrative-input {
-    width: 100%; min-height: 52px; background: var(--surface); border: 1px solid var(--border);
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius-sm); color: var(--text); font-family: var(--font);
-    font-size: 16px; line-height: 1.5; padding: 12px 14px; resize: vertical; margin-top: 12px;
+    font-size: 16px; line-height: 1.5; padding: 12px 14px; margin-top: 12px;
     transition: border-color 0.2s, box-shadow 0.2s;
     box-shadow: inset 0 1px 2px rgba(44,42,37,0.04);
+    box-sizing: border-box;
   }
   .narrative-input:focus {
     outline: none; border-color: var(--accent);
@@ -495,6 +496,10 @@
 </div>
 
 <div class="screen active" id="timersScreen">
+  <div id="dayTotalBar" style="display:none;padding:10px 18px;text-align:center;font-family:var(--font)">
+    <span style="font-size:13px;color:var(--text-secondary);font-weight:600">Today </span>
+    <span id="dayTotalValue" style="font-family:var(--mono);font-size:17px;color:var(--accent);font-weight:700"></span>
+  </div>
   <div class="timer-list" id="timerList"></div>
 </div>
 
@@ -549,7 +554,7 @@
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">TimeKeeper v0.2</div>
+  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">TimeKeeper v0.3</div>
 </div>
 
 <div class="nav">
@@ -792,7 +797,7 @@ function renderTimers() {
       </div>
       </div></div>
       ${(el > 0 || isRun || (t?.narrative||'').trim()) ? `<div class="narrative-panel">
-        <textarea class="narrative-input" placeholder="Paste narrative here..." oninput="updateNarr('${m.id}',this.value)">${t?.narrative||''}</textarea>
+        <input type="text" class="narrative-input" placeholder="Paste narrative here..." oninput="updateNarr('${m.id}',this.value)" onblur="stripPeriod(this,'${m.id}')" value="${(t?.narrative||'').replace(/"/g,'&quot;')}">
         <div class="narrative-row">
           <button class="btn btn-primary" onclick="saveEntry('${m.id}')">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 7 5 11 13 3"/></svg>
@@ -816,6 +821,7 @@ function renderTimers() {
 
 function toggleIv(mid){openIntervals[mid]=!openIntervals[mid];renderTimers();}
 function updateNarr(mid,v){timers[mid].narrative=v;saveData('tk_timers',timers);}
+function stripPeriod(el,mid){const v=el.value.replace(/\.+$/,'');if(v!==el.value){el.value=v;updateNarr(mid,v);}}
 function setAdjust(mid,h){timers[mid].manualAdjustMs=(parseFloat(h)||0)*3600000;saveData('tk_timers',timers);}
 function stepAdjust(mid,delta){
   const t=timers[mid]; const cur=(t.manualAdjustMs||0)/3600000;
@@ -1416,7 +1422,14 @@ function showModal(title,msg,onConfirm){
 }
 function closeModal(){document.getElementById('modal').classList.remove('visible');}
 
-setInterval(()=>{document.querySelectorAll('[data-timer]').forEach(el=>{const id=el.dataset.timer,inc=parseFloat(el.dataset.inc)||0.10,s=parseInt(el.dataset.saved)||0,el2=getElapsed(id);el.innerHTML=`${fmt(el2)}<span class="rounded-time">${fmtRound(el2,inc)} h</span>${s?`<span style="display:block;font-size:12px;color:var(--accent-mid);font-weight:600;font-family:var(--font)">${s} saved</span>`:''}`;});},1000);
+setInterval(()=>{
+  document.querySelectorAll('[data-timer]').forEach(el=>{const id=el.dataset.timer,inc=parseFloat(el.dataset.inc)||0.10,s=parseInt(el.dataset.saved)||0,el2=getElapsed(id);el.innerHTML=`${fmt(el2)}<span class="rounded-time">${fmtRound(el2,inc)} h</span>${s?`<span style="display:block;font-size:12px;color:var(--accent-mid);font-weight:600;font-family:var(--font)">${s} saved</span>`:''}`;});
+  // Update day total on timers screen
+  let dayHrs = entries.filter(e=>isToday(e.timestamp)).reduce((s,e)=>s+parseFloat(e.hours||0),0);
+  matters.forEach(m=>{const t=timers[m.id];if(t&&t.intervals&&t.intervals.length>0){const el=getElapsed(m.id);if(el>0)dayHrs+=roundInc(el,m.increment||0.10);}});
+  const bar=document.getElementById('dayTotalBar'),val=document.getElementById('dayTotalValue');
+  if(dayHrs>0){bar.style.display='';val.textContent=dayHrs.toFixed(2)+' h';}else{bar.style.display='none';}
+},1000);
 
 // ===== BACKUP SYSTEM =====
 
@@ -2066,7 +2079,13 @@ async function cloudUploadNow() {
 
 async function cloudRestore() {
   const token = await getValidAccessToken();
-  if (!token) { alert('Could not get Dropbox token.'); return; }
+  if (!token) {
+    document.getElementById('modalTitle').textContent = 'Connection Error';
+    document.getElementById('modalBody').innerHTML = '<p>Could not connect to Dropbox. Please check your connection and try again.</p>';
+    document.getElementById('modalButtons').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">OK</button>';
+    document.getElementById('modal').classList.add('visible');
+    return;
+  }
 
   try {
     // List files to find most recent JSON backup
@@ -2083,8 +2102,10 @@ async function cloudRestore() {
       .sort((a, b) => b.name.localeCompare(a.name));
 
     if (jsonFiles.length === 0) {
-      showModal('No Cloud Backup Found', '<p>No data backup files were found in Dropbox. Backups are uploaded hourly and kept for 48 hours.</p>', null);
-      document.getElementById('modalConfirm').style.display = 'none';
+      document.getElementById('modalTitle').textContent = 'No Cloud Backup Found';
+      document.getElementById('modalBody').innerHTML = '<p>No data backup files were found in Dropbox. Backups upload weekly and the last 2 are kept.</p>';
+      document.getElementById('modalButtons').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">OK</button>';
+      document.getElementById('modal').classList.add('visible');
       return;
     }
 
@@ -2122,14 +2143,21 @@ async function cloudRestore() {
         saveData('tk_entries', entries);
         recomputeSections();
         renderTimers();
-        renderEntries();
+        renderToday();
         renderSettings();
         closeModal();
-        alert('Restored successfully from cloud backup.');
+        // Show success notification
+        document.getElementById('modalTitle').textContent = '✓ Restore Complete';
+        document.getElementById('modalBody').innerHTML = `<p style="color:var(--accent);font-weight:600">${mCount} matters and ${eCount} entries restored.</p>`;
+        document.getElementById('modalButtons').innerHTML = `<button class="btn btn-primary" onclick="closeModal()">Done</button>`;
+        document.getElementById('modal').classList.add('visible');
       }
     );
   } catch (err) {
-    alert('Cloud restore failed: ' + err.message);
+    document.getElementById('modalTitle').textContent = 'Restore Failed';
+    document.getElementById('modalBody').innerHTML = `<p style="color:var(--danger)">${err.message}</p>`;
+    document.getElementById('modalButtons').innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">OK</button>`;
+    document.getElementById('modal').classList.add('visible');
   }
 }
 
