@@ -106,6 +106,7 @@
     border-radius: var(--radius); margin-bottom: 14px;
     box-shadow: var(--shadow-sm); transition: all 0.25s ease;
     border-left: 4px solid transparent;
+    position: relative; overflow: hidden;
   }
   .matter-card.running {
     border-color: var(--accent); border-width: 1.5px;
@@ -113,6 +114,31 @@
     background: linear-gradient(135deg, #f0faf3 0%, var(--surface) 100%);
     box-shadow: var(--shadow-md), 0 0 0 1.5px var(--accent-light);
   }
+  .matter-card.menu-open { overflow: visible; }
+
+  .swipe-wrap { position: relative; }
+  .swipe-actions {
+    position: absolute; right: 0; top: 0; bottom: 0;
+    display: flex; align-items: stretch;
+  }
+  .swipe-action-btn {
+    width: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border: none; cursor: pointer; font-family: var(--font);
+    font-size: 12px; font-weight: 700; color: white; gap: 2px;
+  }
+  .swipe-action-btn.sa-1 { background: var(--accent-mid); }
+  .swipe-action-btn.sa-5 { background: var(--accent); }
+  .swipe-action-btn.sa-10 { background: #14602F; }
+  .swipe-action-btn.sa-last { background: var(--blue); }
+  .swipe-action-btn.sa-stop1 { background: #E05353; }
+  .swipe-action-btn.sa-stop5 { background: var(--danger); }
+  .swipe-action-btn.sa-stop10 { background: #8B1A1A; }
+  .swipe-action-btn span { font-size: 15px; font-weight: 800; }
+  .swipe-content {
+    position: relative; z-index: 1; background: var(--surface);
+    transition: transform 0.25s ease;
+  }
+  .matter-card.running .swipe-content { background: linear-gradient(135deg, #f0faf3 0%, var(--surface) 100%); }
 
   @keyframes slideIntoRecent {
     0% { opacity: 0; transform: translateY(-8px) scale(0.98); }
@@ -281,13 +307,17 @@
     border-top: 1px solid var(--border-light); margin-top: 6px;
   }
   .manual-adjust-label { font-size: 13px; font-weight: 600; color: var(--text-muted); flex-shrink: 0; }
-  .adjust-input {
-    width: 80px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); color: var(--text); font-family: var(--mono);
-    font-size: 14px; padding: 8px 10px; text-align: center;
-    box-shadow: inset 0 1px 2px rgba(44,42,37,0.04);
+  .adjust-step-btn {
+    width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border);
+    background: var(--surface-inset); color: var(--text); font-size: 18px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; flex-shrink: 0;
   }
-  .adjust-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+  .adjust-step-btn:active { background: var(--border-light); transform: scale(0.92); }
+  .adjust-display {
+    font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--text);
+    min-width: 50px; text-align: center;
+  }
   .adjust-hint { font-size: 12px; color: var(--text-muted); }
 
   /* ===== BADGES ===== */
@@ -646,7 +676,7 @@ function saveEntry(mid) {
     matterName:m.name, matterDetail:m.detail, clientNumber: m.clientNumber||'', matterNumber: m.matterNumber||'',
     billingNumber: numberLine, taskLabel: m.taskLabel||'',
     hours:fmtRound(totalMs,inc), ms:totalMs, rawMs: rawMs, adjustMs: adjMs, increment:inc,
-    narrative:t.narrative.trim(), intervals:[...t.intervals], timestamp:Date.now() });
+    narrative:t.narrative.trim(), intervals:[...t.intervals], timestamp: t.intervals[0]?.start || Date.now() });
   t.intervals=[]; t.manualAdjustMs=0; t.narrative='';
   saveData('tk_timers',timers); saveData('tk_entries',entries);
   openIntervals[mid]=false;
@@ -699,14 +729,55 @@ function renderTimers() {
       });
       if(live) items+=`<div class="interval-item interval-live"><span class="interval-times">${fmtClock(live.start)} – now</span><span class="interval-duration">running</span><span></span></div>`;
       if(!completed.length&&!live) items='<div style="font-size:14px;color:var(--text-muted);padding:10px 0">No intervals yet</div>';
-      ivHtml=`<div class="intervals-panel open"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><input type="number" class="adjust-input" value="${adjD}" step="${inc.toFixed(2)}" onchange="setAdjust('${m.id}',this.value)" placeholder="0"><span class="adjust-hint">hours (${inc===0.25?'¼ hr':'⅒ hr'})</span></div><div style="text-align:right;padding-top:8px;border-top:1px solid var(--border);margin-top:10px"><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:13px;font-weight:600;cursor:pointer;padding:4px 0">Discard Time Entries</button></div></div>`;
+      ivHtml=`<div class="intervals-panel open"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours (${inc===0.25?'¼ hr':'⅒ hr'})</span></div><div style="text-align:right;padding-top:8px;border-top:1px solid var(--border);margin-top:10px"><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:13px;font-weight:600;cursor:pointer;padding:4px 0">Discard Time Entries</button></div></div>`;
     }
 
     const menuItems = `
       <button onclick="this.closest('.card-menu').style.display='none';editMatter('${m.id}')" class="card-menu-item">Edit Matter</button>
       ${isRecent ? `<button onclick="this.closest('.card-menu').style.display='none';removeFromRecent('${m.id}')" class="card-menu-item">Remove from Recent</button>` : ''}`;
 
+    // Find most recent interval end across all timers (excluding this matter)
+    let lastStopBtn = '';
+    if (!isRun) {
+      let lastEnd = 0;
+      Object.keys(timers).forEach(id => {
+        if (id === m.id) return;
+        (timers[id].intervals || []).forEach(iv => {
+          if (iv.end && iv.end > lastEnd) lastEnd = iv.end;
+        });
+      });
+      // Also check saved entries for recent stop times
+      entries.forEach(e => {
+        if (e.intervals) e.intervals.forEach(iv => {
+          if (iv.end && iv.end > lastEnd) lastEnd = iv.end;
+        });
+      });
+      if (lastEnd > 0) {
+        const ago = Date.now() - lastEnd;
+        if (ago < 24 * 60 * 60 * 1000) { // only show if within 24h
+          const t2 = new Date(lastEnd);
+          let h = t2.getHours(), ap = h >= 12 ? 'p' : 'a'; h = h % 12 || 12;
+          const timeLabel = `${h}:${String(t2.getMinutes()).padStart(2,'0')}${ap}`;
+          lastStopBtn = `<button class="swipe-action-btn sa-last" onclick="startAt('${m.id}',${lastEnd})"><span>${timeLabel}</span>last stop</button>`;
+        }
+      }
+    }
+
     return `<div class="matter-card ${isRun?'running':''} ${animateId===m.id?'animate-in':''}" data-id="${m.id}">
+      <div class="swipe-wrap">
+        <div class="swipe-actions">
+          ${isRun ? `
+          <button class="swipe-action-btn sa-stop1" onclick="stopBackdated('${m.id}',1)"><span>1</span>min ago</button>
+          <button class="swipe-action-btn sa-stop5" onclick="stopBackdated('${m.id}',5)"><span>5</span>min ago</button>
+          <button class="swipe-action-btn sa-stop10" onclick="stopBackdated('${m.id}',10)"><span>10</span>min ago</button>
+          ` : `
+          <button class="swipe-action-btn sa-1" onclick="startBackdated('${m.id}',1)"><span>1</span>min ago</button>
+          <button class="swipe-action-btn sa-5" onclick="startBackdated('${m.id}',5)"><span>5</span>min ago</button>
+          <button class="swipe-action-btn sa-10" onclick="startBackdated('${m.id}',10)"><span>10</span>min ago</button>
+          ${lastStopBtn}
+          `}
+        </div>
+      <div class="swipe-content" ontouchstart="swipeStart(event)" ontouchmove="swipeMove(event,'${m.id}')" ontouchend="swipeEnd(event,'${m.id}')">
       <div class="matter-row">
         <button class="timer-toggle" onclick="toggleTimer('${m.id}',event)">
           ${isRun?'<svg fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>':'<svg fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>'}
@@ -726,6 +797,7 @@ function renderTimers() {
           <div class="card-menu" style="display:none">${menuItems}</div>
         </div>
       </div>
+      </div></div>
       ${(el > 0 || isRun || (t?.narrative||'').trim()) ? `<div class="narrative-panel">
         <textarea class="narrative-input" placeholder="Paste narrative here..." oninput="updateNarr('${m.id}',this.value)">${t?.narrative||''}</textarea>
         <div class="narrative-row">
@@ -752,19 +824,141 @@ function renderTimers() {
 function toggleIv(mid){openIntervals[mid]=!openIntervals[mid];renderTimers();}
 function updateNarr(mid,v){timers[mid].narrative=v;saveData('tk_timers',timers);}
 function setAdjust(mid,h){timers[mid].manualAdjustMs=(parseFloat(h)||0)*3600000;saveData('tk_timers',timers);}
+function stepAdjust(mid,delta){
+  const t=timers[mid]; const cur=(t.manualAdjustMs||0)/3600000;
+  const next=Math.round((cur+delta)*100)/100;
+  t.manualAdjustMs=next*3600000; saveData('tk_timers',timers);
+  const disp=document.getElementById('adjDisp_'+mid);
+  if(disp) disp.textContent=next!==0?next.toFixed(2):'0';
+}
 
 function toggleCardMenu(btn) {
   const menu = btn.nextElementSibling;
   const wasOpen = menu.style.display !== 'none';
   // Close all card menus first
   document.querySelectorAll('.card-menu').forEach(m => m.style.display = 'none');
-  if (!wasOpen) menu.style.display = 'block';
+  document.querySelectorAll('.matter-card.menu-open').forEach(c => c.classList.remove('menu-open'));
+  if (!wasOpen) {
+    menu.style.display = 'block';
+    btn.closest('.matter-card').classList.add('menu-open');
+  }
 }
 
 function removeFromRecent(mid) {
   const t = timers[mid];
   if (t) { t.excludeRecent = true; saveData('tk_timers', timers); }
   recomputeSections();
+  renderTimers();
+}
+
+// Swipe-to-backdate
+let swipeStartX = 0, swipeStartY = 0, swiping = false, swipeEl = null;
+const SWIPE_THRESHOLD = 60;
+
+function getSwipeMax(el) {
+  const actions = el.closest('.swipe-wrap')?.querySelector('.swipe-actions');
+  return actions ? actions.scrollWidth : 192;
+}
+
+function swipeStart(e) {
+  const touch = e.touches[0];
+  swipeStartX = touch.clientX;
+  swipeStartY = touch.clientY;
+  swiping = false;
+  swipeEl = e.currentTarget;
+  swipeEl.style.transition = 'none';
+}
+
+function swipeMove(e, mid) {
+  if (!swipeEl) return;
+  const touch = e.touches[0];
+  const dx = swipeStartX - touch.clientX;
+  const dy = Math.abs(touch.clientY - swipeStartY);
+  // If vertical scrolling, bail
+  if (!swiping && dy > 15) { swipeEl = null; return; }
+  if (dx > 10) swiping = true;
+  if (!swiping) return;
+  e.preventDefault();
+  const max = getSwipeMax(swipeEl);
+  const offset = Math.max(0, Math.min(max, dx));
+  swipeEl.style.transform = `translateX(-${offset}px)`;
+}
+
+function swipeEnd(e, mid) {
+  if (!swipeEl) return;
+  swipeEl.style.transition = 'transform 0.25s ease';
+  const touch = e.changedTouches[0];
+  const dx = swipeStartX - touch.clientX;
+  const max = getSwipeMax(swipeEl);
+  if (dx > SWIPE_THRESHOLD) {
+    swipeEl.style.transform = `translateX(-${max}px)`;
+    // Auto-close after 5 seconds if not tapped
+    const el = swipeEl;
+    setTimeout(() => { if (el.style.transform !== 'translateX(0px)') { el.style.transform = 'translateX(0px)'; }}, 5000);
+  } else {
+    swipeEl.style.transform = 'translateX(0px)';
+  }
+  swipeEl = null; swiping = false;
+}
+
+function closeAllSwipes() {
+  document.querySelectorAll('.swipe-content').forEach(el => {
+    el.style.transition = 'transform 0.25s ease';
+    el.style.transform = 'translateX(0px)';
+  });
+}
+
+function startBackdated(mid, minutes) {
+  closeAllSwipes();
+  const now = Date.now();
+  const startTime = now - (minutes * 60000);
+  startTimerAt(mid, startTime);
+}
+
+function startAt(mid, timestamp) {
+  closeAllSwipes();
+  startTimerAt(mid, timestamp);
+}
+
+function startTimerAt(mid, startTime) {
+  const now = Date.now();
+
+  // Stop any running timer and trim it
+  Object.keys(timers).forEach(id => {
+    if (id !== mid && timers[id].running) {
+      const iv = timers[id].intervals.find(i => !i.end);
+      if (iv) {
+        iv.end = Math.max(iv.start, startTime);
+      }
+      timers[id].running = false;
+    }
+  });
+
+  // Start the new timer at the given time
+  const t = timers[mid];
+  t.intervals.push({ start: startTime, end: null });
+  t.running = true;
+  t.lastUsed = now;
+  delete t.excludeRecent;
+
+  const wasInRest = cachedRestIds.has(mid);
+  saveData('tk_timers', timers);
+  if (wasInRest) { animateId = mid; }
+  recomputeSections();
+  renderTimers();
+  setTimeout(() => { animateId = null; }, 400);
+}
+
+function stopBackdated(mid, minutes) {
+  closeAllSwipes();
+  const stopTime = Date.now() - (minutes * 60000);
+  const t = timers[mid];
+  const iv = t.intervals.find(i => !i.end);
+  if (iv) {
+    iv.end = Math.max(iv.start, stopTime);
+  }
+  t.running = false;
+  saveData('tk_timers', timers);
   renderTimers();
 }
 
@@ -1039,6 +1233,10 @@ document.addEventListener('click', function(e) {
   }
   if (!e.target.closest('.card-menu') && !e.target.closest('.card-gear-btn')) {
     document.querySelectorAll('.card-menu').forEach(m => m.style.display='none');
+    document.querySelectorAll('.matter-card.menu-open').forEach(c => c.classList.remove('menu-open'));
+  }
+  if (!e.target.closest('.swipe-actions') && !e.target.closest('.swipe-content')) {
+    closeAllSwipes();
   }
 });
 
