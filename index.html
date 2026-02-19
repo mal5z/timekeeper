@@ -254,7 +254,7 @@
   }
   .narrative-input::placeholder { color: var(--text-muted); }
 
-  .narrative-row { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+  .narrative-row { display: flex; gap: 10px; margin-top: 10px; align-items: center; justify-content: flex-end; }
 
   .btn {
     padding: 11px 18px; border-radius: var(--radius-sm); border: none;
@@ -554,7 +554,7 @@
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">TimeKeeper v0.4</div>
+  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">TimeKeeper v0.5</div>
 </div>
 
 <div class="nav">
@@ -693,8 +693,16 @@ function saveEntry(mid) {
 
 function renderTimers() {
   const list=document.getElementById('timerList');
-  const recent=matters.filter(m=>cachedRecentIds.has(m.id)).sort((a,b)=>a.name.localeCompare(b.name));
-  const rest=matters.filter(m=>cachedRestIds.has(m.id)).sort((a,b)=>a.name.localeCompare(b.name));
+  // Hide parent matters that have zero time when active spawned tasks exist
+  const activeSpawnParents = new Set(matters.filter(m=>m.taskLabel&&m.parentId).map(m=>m.parentId));
+  function shouldShow(m) {
+    if (!activeSpawnParents.has(m.id)) return true;
+    const el = getElapsed(m.id);
+    const narr = (timers[m.id]?.narrative||'').trim();
+    return el > 0 || narr;
+  }
+  const recent=matters.filter(m=>cachedRecentIds.has(m.id)&&shouldShow(m)).sort((a,b)=>a.name.localeCompare(b.name));
+  const rest=matters.filter(m=>cachedRestIds.has(m.id)&&shouldShow(m)).sort((a,b)=>a.name.localeCompare(b.name));
 
   function renderCard(m, isRecent) {
     const t=timers[m.id], el=getElapsed(m.id), isRun=t?.running;
@@ -799,10 +807,7 @@ function renderTimers() {
       ${(el > 0 || isRun || (t?.narrative||'').trim()) ? `<div class="narrative-panel">
         <textarea class="narrative-input" rows="1" placeholder="Paste narrative here..." oninput="updateNarr('${m.id}',this.value);autoGrow(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" onblur="stripPeriod(this,'${m.id}')" onfocus="autoGrow(this)">${t?.narrative||''}</textarea>
         <div class="narrative-row">
-          <button class="btn btn-primary" onclick="saveEntry('${m.id}')">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 7 5 11 13 3"/></svg>
-            Save Entry
-          </button>
+          <button onclick="saveEntry('${m.id}')" style="background:none;border:1px solid var(--border);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;padding:6px 12px;border-radius:var(--radius-sm)">Save Entry</button>
           <button onclick="spawnTask('${m.parentId||m.id}','${m.id}',event)" style="background:none;border:1px solid var(--border);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;padding:6px 12px;border-radius:var(--radius-sm)">+ Task</button>
           <button class="intervals-toggle ${isOpen?'open':''}" onclick="toggleIv('${m.id}')">
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1123,7 +1128,9 @@ function renderToday(){
       const intSec = Math.floor((intervalMs%60000)/1000);
       const adjMin = adjIncrements * minsPerInc;
       const totalMin = intMin + adjMin;
-      const timeStr = totalMin > 0 ? `${totalMin}m ${intSec}s` : `${intSec}s`;
+      const dispH = Math.floor(totalMin/60);
+      const dispM = String(Math.abs(totalMin)%60).padStart(2,'0');
+      const timeStr = totalMin > 0 ? `${dispH}:${dispM}` : `0:00`;
       html += `<div class="entry-card"><div class="entry-top"><span class="entry-matter">${e.matterName}</span><div style="text-align:right;flex-shrink:0;margin-left:12px"><span class="entry-time" style="margin-left:0">${e.hours} h${eb}</span><div style="font-size:12px;color:var(--text-muted);font-family:var(--mono);margin-top:2px">${timeStr}</div></div></div><div class="entry-narrative ${e.narrative?'':'missing'}">${e.narrative||'No narrative — tap edit to add'}</div><div class="entry-actions" style="justify-content:space-between"><button onclick="confirmDeleteEntry('${e.id}')" style="background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;padding:4px 0;font-family:var(--font)">Delete</button><button class="entry-btn" onclick="editEntry('${e.id}')">Edit</button></div></div>`;
     });
   });
