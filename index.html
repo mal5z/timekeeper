@@ -522,6 +522,7 @@
         </div>
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="cloudLastSync">Readable text backups upload hourly and auto-delete after 48 hours.</div>
         <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:8px;font-size:13px" onclick="cloudUploadNow()">Upload Now</button>
+        <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:8px;font-size:13px" onclick="cloudRestore()">Restore from Cloud</button>
         <button class="btn btn-secondary" style="width:100%;justify-content:center;font-size:13px;color:var(--danger);border-color:var(--danger-light)" onclick="cloudDisconnect()">Disconnect Dropbox</button>
       </div>
       <div id="cloudSetup">
@@ -548,7 +549,7 @@
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">TimeKeeper v0.1</div>
+  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">TimeKeeper v0.2</div>
 </div>
 
 <div class="nav">
@@ -568,14 +569,8 @@
 
 <script>
 const DEFAULT_MATTERS = [
-  { id: 'm1', name: 'Hadden', detail: 'External Investigation (103099-40010)', increment: 0.10 },
-  { id: 'm2', name: 'Hadden Subpoena', detail: 'CONFIDENTIAL (103099-40020)', increment: 0.10 },
-  { id: 'm3', name: 'Huawei', detail: 'EDNY Litigation (050385-40050)', increment: 0.10 },
-  { id: 'm4', name: 'Baroni Indemnity', detail: 'CONFIDENTIAL (083500-95930)', increment: 0.10 },
-  { id: 'm5', name: 'Blueacorn — Investigations', detail: 'Internal Investigation (072684-40020)', increment: 0.10 },
-  { id: 'm6', name: 'Blueacorn — Prestamos', detail: 'Prestamos (072684-40060)', increment: 0.10 },
-  { id: 'm7', name: 'CONCACAF', detail: 'Remission Impacts (055315-40100)', increment: 0.10 },
-  { id: 'm8', name: 'Duffett, Andy', detail: 'CONFIDENTIAL (105242-10020)', increment: 0.10 },
+  { id: 'm1', name: 'Sample Client', clientNumber: '000000', matterNumber: '00010', matterName: 'General Corporate', increment: 0.10 },
+  { id: 'm2', name: 'Sample Client', clientNumber: '000000', matterNumber: '00020', matterName: 'Litigation', increment: 0.25 },
 ];
 
 function loadData(key, fb) { try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : fb; } catch { return fb; } }
@@ -1958,22 +1953,46 @@ async function cloudUploadBackup() {
   cfg.lastUpload = Date.now();
   saveCloudConfig(cfg);
 
+  // Check if weekly JSON data backup is due
+  const lastJsonUpload = cfg.lastJsonUpload || 0;
+  if (Date.now() - lastJsonUpload > 7 * 24 * 60 * 60 * 1000) {
+    await cloudUploadJsonBackup(token, cfg);
+  }
+
   return true;
 }
 
-// Prune old cloud backups (keep 48 hours)
+async function cloudUploadJsonBackup(token, cfg) {
+  try {
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
+    const jsonData = JSON.stringify({ matters, timers, entries, exportedAt: now.toISOString() });
+    const jsonPath = `/timekeeper-data-${dateStr}.json`;
+    const resp = await fetch('https://content.dropboxapi.com/2/files/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/octet-stream',
+        'Dropbox-API-Arg': JSON.stringify({ path: jsonPath, mode: 'overwrite', mute: true })
+      },
+      body: new TextEncoder().encode(jsonData)
+    });
+    if (resp.ok) {
+      cfg.lastJsonUpload = Date.now();
+      saveCloudConfig(cfg);
+    }
+  } catch (err) { console.warn('JSON backup upload failed:', err); }
+}
+
+// Prune old cloud backups: text files by 48h, JSON data files keep last 2
 async function cloudPruneOld() {
   const token = await getValidAccessToken();
   if (!token) return;
 
   try {
-    // List files in app folder
     const listResp = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: '', recursive: false })
     });
 
@@ -1983,27 +2002,27 @@ async function cloudPruneOld() {
     const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
     const toDelete = [];
 
+    // Text backups: prune by age (48h)
     (listing.entries || []).forEach(entry => {
       if (entry['.tag'] === 'file' && (entry.name.startsWith('timekeeper-backup-') || entry.name.startsWith('backup-'))) {
-        // Parse date from filename
         const match = entry.name.match(/(?:timekeeper-)?backup-(\d{4})-(\d{2})-(\d{2})-(\d{2})/);
         if (match) {
           const fileDate = new Date(`${match[1]}-${match[2]}-${match[3]}T${match[4]}:00:00Z`);
-          if (fileDate < cutoff) {
-            toDelete.push(entry.path_lower);
-          }
+          if (fileDate < cutoff) toDelete.push(entry.path_lower);
         }
       }
     });
 
-    // Delete old files
+    // JSON data backups: keep only last 2
+    const jsonFiles = (listing.entries || [])
+      .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-data-') && e.name.endsWith('.json'))
+      .sort((a, b) => b.name.localeCompare(a.name));
+    jsonFiles.slice(2).forEach(e => toDelete.push(e.path_lower));
+
     for (const path of toDelete) {
       await fetch('https://api.dropboxapi.com/2/files/delete_v2', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: path })
       });
     }
@@ -2034,11 +2053,83 @@ async function cloudUploadNow() {
   showCloudStatus('Uploading…', '');
   try {
     await cloudUploadBackup();
+    // Manual upload always includes JSON data backup
+    const token = await getValidAccessToken();
+    if (token) await cloudUploadJsonBackup(token, cfg);
     await cloudPruneOld();
     showCloudStatus('Backup uploaded to Dropbox.', 'success');
     renderCloudUI();
   } catch (err) {
     showCloudStatus('Upload failed: ' + err.message, 'error');
+  }
+}
+
+async function cloudRestore() {
+  const token = await getValidAccessToken();
+  if (!token) { alert('Could not get Dropbox token.'); return; }
+
+  try {
+    // List files to find most recent JSON backup
+    const listResp = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '', recursive: false })
+    });
+    if (!listResp.ok) throw new Error('Could not list Dropbox files');
+    const listing = await listResp.json();
+
+    const jsonFiles = (listing.entries || [])
+      .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-data-') && e.name.endsWith('.json'))
+      .sort((a, b) => b.name.localeCompare(a.name));
+
+    if (jsonFiles.length === 0) {
+      showModal('No Cloud Backup Found', '<p>No data backup files were found in Dropbox. Backups are uploaded hourly and kept for 48 hours.</p>', null);
+      document.getElementById('modalConfirm').style.display = 'none';
+      return;
+    }
+
+    const latest = jsonFiles[0];
+    const match = latest.name.match(/data-(\d{4})-(\d{2})-(\d{2})-(\d{2})/);
+    const dateLabel = match ? new Date(`${match[1]}-${match[2]}-${match[3]}T${match[4]}:00:00`).toLocaleString() : latest.name;
+
+    // Download it
+    const dlResp = await fetch('https://content.dropboxapi.com/2/files/download', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Dropbox-API-Arg': JSON.stringify({ path: latest.path_lower })
+      }
+    });
+    if (!dlResp.ok) throw new Error('Could not download backup');
+    const data = JSON.parse(await dlResp.text());
+
+    const mCount = (data.matters || []).length;
+    const eCount = (data.entries || []).length;
+    const activeCount = Object.values(data.timers || {}).filter(t => t.intervals && t.intervals.length > 0).length;
+
+    showModal('Restore from Cloud',
+      `<p>Found backup from <strong>${dateLabel}</strong></p>
+       <p style="font-size:13px;color:var(--text-secondary);line-height:1.6">
+         ${mCount} matters · ${eCount} saved entries · ${activeCount} active timers<br>
+         This will <strong>replace all current data</strong>.
+       </p>`,
+      () => {
+        matters = data.matters || [];
+        timers = data.timers || {};
+        entries = data.entries || [];
+        saveData('tk_matters', matters);
+        saveData('tk_timers', timers);
+        saveData('tk_entries', entries);
+        recomputeSections();
+        renderTimers();
+        renderEntries();
+        renderSettings();
+        closeModal();
+        alert('Restored successfully from cloud backup.');
+      }
+    );
+  } catch (err) {
+    alert('Cloud restore failed: ' + err.message);
   }
 }
 
@@ -2058,7 +2149,7 @@ function renderCloudUI() {
     if (cfg.lastUpload) {
       const mins = Math.floor((Date.now() - cfg.lastUpload) / 60000);
       const ago = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : `${Math.floor(mins/60)}h ${mins%60}m ago`;
-      lastSync.textContent = `Last upload: ${ago}. Encrypted backups upload hourly, auto-delete after 48h.`;
+      lastSync.textContent = `Last upload: ${ago}. Readable text backups upload hourly, auto-delete after 48h.`;
     }
   } else {
     connectedEl.style.display = 'none';
