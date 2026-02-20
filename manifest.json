@@ -1,6 +1,6 @@
 {
-  "name": "TimeKeep",
-  "short_name": "TimeKeep",
+  "name": "Billable",
+  "short_name": "Billable",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#D5D0C7",

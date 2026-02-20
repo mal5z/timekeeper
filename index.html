@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="TimeKeep">
+<meta name="apple-mobile-web-app-title" content="Billable">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>TimeKeep</title>
+<title>Billable</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -554,7 +554,7 @@
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">TimeKeeper v0.5</div>
+  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.6</div>
 </div>
 
 <div class="nav">
@@ -707,7 +707,8 @@ function renderTimers() {
   function renderCard(m, isRecent) {
     const t=timers[m.id], el=getElapsed(m.id), isRun=t?.running;
     const inc=m.increment||0.10;
-    const saved=entries.filter(e=>e.matterId===m.id&&isToday(e.timestamp)).length;
+    const countId = m.taskLabel ? (m.parentId || m.id) : m.id;
+    const saved=entries.filter(e=>e.matterId===countId&&isToday(e.timestamp)).length;
 
     // Build display lines
     let numberLine = '';
@@ -1875,7 +1876,7 @@ async function cloudUploadBackup() {
   // Build readable text report
   const now = new Date();
   let lines = [];
-  lines.push('TIMEKEEPER BACKUP');
+  lines.push('BILLABLE BACKUP');
   lines.push(`Exported: ${now.toLocaleString()}`);
   lines.push('='.repeat(50));
 
