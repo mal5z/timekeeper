@@ -2139,7 +2139,7 @@ async function cloudPruneOld() {
     jsonFiles.forEach(f => {
       const match = f.name.match(/data-(\d{4})-(\d{2})-(\d{2})(?:-(\d{2}))?/);
       if (!match) return;
-      const hr = match[4] || '12';
+      const hr = match[4] || '00';
       const fileDate = new Date(`${match[1]}-${match[2]}-${match[3]}T${hr}:00:00Z`).getTime();
       const dayKey = `${match[1]}-${match[2]}-${match[3]}`;
 
@@ -2250,19 +2250,27 @@ async function cloudRestore() {
     let listHtml = '<div style="max-height:300px;overflow-y:auto">';
     let currentDay = '';
     jsonFiles.forEach((f, i) => {
-      const match = f.name.match(/data-(\d{4})-(\d{2})-(\d{2})(?:-(\d{2}))?/);
+      // Use Dropbox's server_modified for exact time, fall back to filename
+      const d = f.server_modified ? new Date(f.server_modified) : null;
       let timeLabel = '';
       let dayKey = '';
-      if (match) {
-        dayKey = `${match[1]}-${match[2]}-${match[3]}`;
-        const hr = match[4] || '12';
-        const d = new Date(`${match[1]}-${match[2]}-${match[3]}T${hr}:00:00`);
+      let dayLabel = '';
+      if (d && !isNaN(d)) {
+        dayKey = d.toLocaleDateString('en-CA'); // YYYY-MM-DD local
+        dayLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
         timeLabel = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      } else {
+        const match = f.name.match(/data-(\d{4})-(\d{2})-(\d{2})(?:-(\d{2}))?/);
+        if (match) {
+          const hr = match[4] || '00';
+          const fb = new Date(`${match[1]}-${match[2]}-${match[3]}T${hr}:00:00Z`);
+          dayKey = fb.toLocaleDateString('en-CA');
+          dayLabel = fb.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+          timeLabel = match[4] ? fb.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : 'Daily backup';
+        }
       }
       if (dayKey && dayKey !== currentDay) {
         currentDay = dayKey;
-        const dayDate = new Date(dayKey + 'T12:00:00');
-        const dayLabel = dayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
         listHtml += `<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;padding:${i > 0 ? '10px' : '0'} 0 6px">${dayLabel}</div>`;
       }
       const sizeKb = f.size ? (f.size / 1024).toFixed(1) + ' KB' : '';
@@ -2310,12 +2318,17 @@ async function cloudRestorePick(idx) {
     const activeCount = Object.values(data.timers || {}).filter(t => t.intervals && t.intervals.length > 0).length;
     const matterNames = (data.matters || []).filter(m => !m.taskLabel).map(m => m.name).join(', ');
 
-    const match = file.name.match(/data-(\d{4})-(\d{2})-(\d{2})(?:-(\d{2}))?/);
     let dateLabel = file.name;
-    if (match) {
-      const hr = match[4] || '12';
-      const d = new Date(`${match[1]}-${match[2]}-${match[3]}T${hr}:00:00`);
+    if (file.server_modified) {
+      const d = new Date(file.server_modified);
       dateLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    } else {
+      const match = file.name.match(/data-(\d{4})-(\d{2})-(\d{2})(?:-(\d{2}))?/);
+      if (match) {
+        const hr = match[4] || '00';
+        const d = new Date(`${match[1]}-${match[2]}-${match[3]}T${hr}:00:00Z`);
+        dateLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      }
     }
 
     document.getElementById('modalTitle').textContent = 'Confirm Restore';
