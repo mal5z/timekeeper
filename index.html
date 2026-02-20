@@ -160,7 +160,14 @@
   }
 
   .matter-row {
-    display: flex; align-items: center; padding: 16px; gap: 14px; user-select: none;
+    padding: 14px 16px; user-select: none;
+  }
+  .matter-header {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .matter-body {
+    display: flex; align-items: center; gap: 14px;
   }
 
   .timer-toggle {
@@ -181,18 +188,18 @@
   }
   .timer-toggle svg { width: 20px; height: 20px; }
 
-  .matter-info { flex: 1; min-width: 0; }
+  .matter-info { flex: 1; min-width: 0; min-height: 44px; }
   .matter-name {
     font-size: 18px; font-weight: 700; color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.3;
   }
   .matter-detail {
-    font-size: 16px; font-weight: 700; color: var(--text-secondary); margin-top: 3px;
+    font-size: 16px; font-weight: 700; color: var(--text-secondary);
     line-height: 1.4;
     font-family: var(--mono);
   }
   .matter-desc {
-    font-size: 16px; color: var(--text-secondary); margin-top: 2px;
+    font-size: 16px; color: var(--text-secondary); margin-top: 3px;
     line-height: 1.4;
   }
   .task-label {
@@ -211,7 +218,7 @@
 
   .matter-card { position: relative; }
   .card-gear-wrap {
-    position: relative; flex-shrink: 0; margin-left: 4px; align-self: flex-start; padding-top: 2px;
+    position: relative; flex-shrink: 0;
   }
   .card-gear-btn {
     background: none; border: none; color: var(--text-secondary); cursor: pointer;
@@ -236,7 +243,7 @@
   .matter-time {
     font-family: var(--mono); font-size: 20px; font-weight: 600;
     color: var(--text-secondary); flex-shrink: 0; text-align: right; line-height: 1.4;
-    letter-spacing: -0.5px; align-self: flex-start; padding-top: 2px;
+    letter-spacing: -0.5px;
   }
   .matter-card.running .matter-time { color: var(--accent); }
   .matter-time .rounded-time {
@@ -865,22 +872,26 @@ function renderTimers() {
         </div>
       <div class="swipe-content" ontouchstart="swipeStart(event)" ontouchmove="swipeMove(event,'${m.id}')" ontouchend="swipeEnd(event,'${m.id}')">
       <div class="matter-row">
-        <button class="timer-toggle" onclick="toggleTimer('${m.id}',event)">
-          ${isRun?'<svg fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>':'<svg fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>'}
-        </button>
-        <div class="matter-info" onclick="editMatter('${m.id}')" style="cursor:pointer">
-          <div class="matter-name">${m.name}</div>
-          ${numberLine ? `<div class="matter-detail">${numberLine}</div>` : ''}
-          ${descLine ? `<div class="matter-desc">${descLine}</div>` : ''}
+        <div class="matter-header">
+          <div class="matter-name" onclick="editMatter('${m.id}')" style="cursor:pointer">${m.name}</div>
+          <div class="card-gear-wrap">
+            <button onclick="toggleCardMenu(this)" class="card-gear-btn">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            </button>
+            <div class="card-menu" style="display:none">${menuItems}</div>
+          </div>
         </div>
-        <div class="matter-time" data-timer="${m.id}" data-inc="${inc}" data-saved="${saved}">
-          <span class="timer-hms">${fmt(el)}</span><span class="rounded-time">${fmtRound(el,inc)} h</span>${saved?`<span style="display:block;font-size:15px;color:var(--accent-mid);font-weight:600;font-family:var(--font)">${saved} saved</span>`:''}
-        </div>
-        <div class="card-gear-wrap">
-          <button onclick="toggleCardMenu(this)" class="card-gear-btn">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <div class="matter-body">
+          <button class="timer-toggle" onclick="toggleTimer('${m.id}',event)">
+            ${isRun?'<svg fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>':'<svg fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>'}
           </button>
-          <div class="card-menu" style="display:none">${menuItems}</div>
+          <div class="matter-info" onclick="editMatter('${m.id}')" style="cursor:pointer">
+            ${numberLine ? `<div class="matter-detail">${numberLine}</div>` : ''}
+            ${descLine ? `<div class="matter-desc">${descLine}</div>` : ''}
+          </div>
+          <div class="matter-time" data-timer="${m.id}" data-inc="${inc}" data-saved="${saved}">
+            <span class="timer-hms">${fmt(el)}</span><span class="rounded-time">${fmtRound(el,inc)} h</span><span style="display:block;font-size:15px;font-weight:600;font-family:var(--font);min-height:1.2em;${saved?'color:var(--accent-mid)':'visibility:hidden'}">${saved ? saved+' saved' : '&nbsp;'}</span>
+          </div>
         </div>
       </div>
       </div></div>
@@ -1608,7 +1619,7 @@ function showModal(title,msg,onConfirm){
 function closeModal(){document.getElementById('modal').classList.remove('visible');}
 
 setInterval(()=>{
-  document.querySelectorAll('[data-timer]').forEach(el=>{const id=el.dataset.timer,inc=parseFloat(el.dataset.inc)||0.10,s=parseInt(el.dataset.saved)||0,el2=getElapsed(id);el.innerHTML=`${fmt(el2)}<span class="rounded-time">${fmtRound(el2,inc)} h</span>${s?`<span style="display:block;font-size:15px;color:var(--accent-mid);font-weight:600;font-family:var(--font)">${s} saved</span>`:''}`;});
+  document.querySelectorAll('[data-timer]').forEach(el=>{const id=el.dataset.timer,inc=parseFloat(el.dataset.inc)||0.10,s=parseInt(el.dataset.saved)||0,el2=getElapsed(id);el.innerHTML=`${fmt(el2)}<span class="rounded-time">${fmtRound(el2,inc)} h</span><span style="display:block;font-size:15px;font-weight:600;font-family:var(--font);min-height:1.2em;${s?'color:var(--accent-mid)':'visibility:hidden'}">${s ? s+' saved' : '&nbsp;'}</span>`;});
   // Update day total on timers screen
   let dayHrs = entries.filter(e=>isToday(e.timestamp)).reduce((s,e)=>s+parseFloat(e.hours||0),0);
   matters.forEach(m=>{const t=timers[m.id];if(t&&t.intervals&&t.intervals.length>0){const el=getElapsed(m.id);if(el>0)dayHrs+=roundInc(el,m.increment||0.10);}});
