@@ -316,10 +316,15 @@
 
   /* ===== INTERVALS PANEL ===== */
   .intervals-panel {
-    display: none; padding: 0 0 16px;
-    background: var(--surface-inset); border-top: 1px solid #E8E5DF;
+    max-height: 0; overflow: hidden;
+    background: var(--surface-inset); border-top: 0px solid #E8E5DF;
+    transition: max-height 0.35s ease, border-top 0.1s;
   }
-  .intervals-panel.open { display: block; }
+  .intervals-panel.open { max-height: 2000px; border-top: 1px solid #E8E5DF; transition: max-height 0.45s ease-in, border-top 0.1s; }
+  .iv-collapse-bar {
+    display: flex; justify-content: center; padding: 6px 0 4px; cursor: pointer;
+    border-top: 1px solid var(--border-light); margin: 8px 16px 0;
+  }
   .intervals-header {
     font-size: 15px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;
     letter-spacing: 1px; padding: 12px 0 8px;
@@ -618,7 +623,7 @@
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.16</div>
+  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.17</div>
 </div>
 
 <div class="nav">
@@ -858,7 +863,8 @@ function renderTimers() {
     const adjH=(t?.manualAdjustMs||0)/3600000, adjD=adjH.toFixed(2);
 
     let ivHtml='';
-    if(isOpen){
+    // Always build panel content for active timers so animation works
+    if(el > 0 || isRun || (t?.narrative||'').trim()) {
       let items='';
       completed.forEach((iv,idx)=>{
         items+=`<div class="interval-item"><span class="interval-times">${fmtClock(iv.start)} – ${fmtClock(iv.end)}</span><span class="interval-duration">${fmtDur(iv.end-iv.start)}</span><button class="interval-edit-btn" onclick="editInterval('${m.id}',${idx})">Edit</button></div>`;
@@ -866,7 +872,7 @@ function renderTimers() {
       if(live) items+=`<div class="interval-item interval-live"><span class="interval-times">${fmtClock(live.start)} – now</span><span class="interval-duration">running</span><span></span></div>`;
       if(!completed.length&&!live) items='<div style="font-size:14px;color:var(--text-secondary);padding:10px 0">No intervals yet</div>';
       const narrTextarea = `<div style="padding:12px 16px 0"><div style="font-size:13px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Narrative</div><textarea class="narrative-input" id="narrInput_${m.id}" rows="1" placeholder="Paste narrative here..." oninput="updateNarr('${m.id}',this.value);autoGrow(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" onblur="stripPeriod(this,'${m.id}')" onfocus="autoGrow(this)" style="margin-top:0">${t?.narrative||''}</textarea></div>`;
-      ivHtml=`<div class="intervals-panel open">${narrTextarea}<div style="padding:0 16px"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}" onclick="directEditAdjust('${m.id}',${inc})">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours</span></div><div style="padding-top:10px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;justify-content:flex-start;align-items:center;gap:12px"><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Discard</button><button onclick="openTransferTime('${m.id}')" style="background:none;border:1px solid var(--border);color:var(--text-secondary);font-size:15px;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:var(--radius-sm)">Transfer to Another Matter</button></div></div></div></div>`;
+      ivHtml=`<div class="intervals-panel${isOpen?' open':''}" id="ivPanel_${m.id}">${narrTextarea}<div style="padding:0 16px"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}" onclick="directEditAdjust('${m.id}',${inc})">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours</span></div><div style="padding-top:10px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center"><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Discard</button><button onclick="openTransferTime('${m.id}')" style="background:none;border:none;color:#2563EB;font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Transfer matter</button></div></div></div><div class="iv-collapse-bar" onclick="toggleIv('${m.id}')"><svg width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></div></div>`;
     }
 
     const menuItems = `
@@ -958,7 +964,7 @@ function renderTimers() {
           </button>
         </div>
       </div>` : ''}
-      ${(el > 0 || isRun || (t?.narrative||'').trim()) ? ivHtml : ''}
+      ${ivHtml}
     </div>`;
   }
 
@@ -1042,12 +1048,41 @@ function flipRenderTimers() {
   }
 }
 
-function toggleIv(mid){openIntervals[mid]=!openIntervals[mid];renderTimers();}
-function openNarrative(mid){
-  if(!openIntervals[mid]){openIntervals[mid]=true;renderTimers();}
-  setTimeout(()=>{const ta=document.getElementById('narrInput_'+mid);if(ta){ta.focus();autoGrow(ta);}},50);
+function toggleIv(mid){
+  openIntervals[mid]=!openIntervals[mid];
+  const panel = document.getElementById('ivPanel_'+mid);
+  if(panel) {
+    const chevronBtn = document.querySelector(`[data-id="${mid}"] .intervals-toggle`);
+    if(openIntervals[mid]) {
+      panel.classList.add('open');
+      if(chevronBtn) chevronBtn.classList.add('open');
+      // Re-measure textareas once panel is visible
+      setTimeout(()=>{ panel.querySelectorAll('.narrative-input').forEach(el=>{if(el.value)autoGrow(el);}); }, 50);
+    } else {
+      panel.classList.remove('open');
+      if(chevronBtn) chevronBtn.classList.remove('open');
+    }
+  } else {
+    renderTimers();
+  }
 }
-function updateNarr(mid,v){timers[mid].narrative=v;saveData('tk_timers',timers);}
+function openNarrative(mid){
+  if(!openIntervals[mid]) toggleIv(mid);
+  setTimeout(()=>{const ta=document.getElementById('narrInput_'+mid);if(ta){ta.focus();autoGrow(ta);}},100);
+}
+function updateNarr(mid,v){
+  timers[mid].narrative=v;saveData('tk_timers',timers);
+  // Update preview on card
+  const card = document.querySelector(`[data-id="${mid}"]`);
+  if(card) {
+    const preview = card.querySelector('.narrative-preview > span:last-child');
+    if(preview) {
+      const trimmed = v.trim();
+      if(trimmed) { preview.style.color='var(--text-secondary)'; preview.style.fontStyle='normal'; preview.textContent=trimmed; }
+      else { preview.style.color='var(--warning)'; preview.style.fontStyle='italic'; preview.textContent='Add narrative…'; }
+    }
+  }
+}
 function stripPeriod(el,mid){const v=el.value.replace(/[\s.]+$/,'');if(v!==el.value){el.value=v;updateNarr(mid,v);}}
 function autoGrow(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
 function setAdjust(mid,h){timers[mid].manualAdjustMs=(parseFloat(h)||0)*3600000;saveData('tk_timers',timers);}
