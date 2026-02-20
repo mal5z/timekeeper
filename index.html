@@ -59,7 +59,7 @@
   .nav-btn {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
     padding: 10px 0 8px; background: none; border: none; color: var(--text-muted);
-    font-family: var(--font); font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
+    font-family: var(--font); font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
     text-transform: uppercase; cursor: pointer; transition: color 0.2s;
     position: relative;
   }
@@ -88,7 +88,7 @@
   .timer-list { padding: 4px 14px 8px; }
 
   .section-label {
-    font-size: 15px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;
+    font-size: 17px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;
     letter-spacing: 1px; padding: 16px 4px 10px; margin-top: 2px;
     display: flex; align-items: center; gap: 8px; cursor: pointer;
     -webkit-user-select: none; user-select: none;
@@ -98,13 +98,18 @@
     background: var(--text-muted); flex-shrink: 0;
   }
   .section-label::after {
-    content: '▾'; font-size: 22px; color: var(--text-muted); margin-left: auto;
+    content: '▾'; font-size: 30px; color: var(--text-muted); margin-left: auto;
     transition: transform 0.25s ease;
   }
   .section-label.collapsed::after { transform: rotate(-90deg); }
   .section-label.section-active::before { background: var(--accent); }
   .section-label.section-recent::before { background: var(--blue); }
   .section-label:first-child { padding-top: 4px; }
+  .section-count {
+    font-size: 14px; font-weight: 600; color: var(--text-secondary);
+    background: var(--surface-inset); padding: 1px 8px; border-radius: 10px;
+    letter-spacing: 0; text-transform: none;
+  }
 
   /* ===== MATTER CARDS ===== */
   .matter-card {
@@ -130,7 +135,7 @@
   .swipe-action-btn {
     width: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center;
     border: none; cursor: pointer; font-family: var(--font);
-    font-size: 12px; font-weight: 700; color: white; gap: 2px;
+    font-size: 14px; font-weight: 700; color: white; gap: 2px;
   }
   .swipe-action-btn.sa-1 { background: var(--accent-mid); }
   .swipe-action-btn.sa-5 { background: var(--accent); }
@@ -178,20 +183,20 @@
 
   .matter-info { flex: 1; min-width: 0; }
   .matter-name {
-    font-size: 16px; font-weight: 700; color: var(--text);
+    font-size: 18px; font-weight: 700; color: var(--text);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .matter-detail {
-    font-size: 14px; font-weight: 700; color: var(--text-secondary); margin-top: 3px;
+    font-size: 16px; font-weight: 700; color: var(--text-secondary); margin-top: 3px;
     line-height: 1.4;
     font-family: var(--mono);
   }
   .matter-desc {
-    font-size: 13px; color: var(--text-muted); margin-top: 2px;
+    font-size: 16px; color: var(--text-secondary); margin-top: 2px;
     line-height: 1.4;
   }
   .task-label {
-    display: inline-block; font-size: 11px; font-weight: 700; color: var(--blue);
+    display: inline-block; font-size: 14px; font-weight: 700; color: var(--blue);
     background: var(--blue-light); padding: 2px 8px; border-radius: 10px;
     margin-top: 4px; letter-spacing: 0.2px;
   }
@@ -209,10 +214,10 @@
     position: relative; flex-shrink: 0; margin-left: 4px; align-self: flex-start; padding-top: 2px;
   }
   .card-gear-btn {
-    background: none; border: none; color: var(--text-muted); cursor: pointer;
+    background: none; border: none; color: var(--text-secondary); cursor: pointer;
     padding: 4px; border-radius: 6px; transition: all 0.15s;
     display: flex; align-items: center; justify-content: center;
-    opacity: 0.4;
+    opacity: 0.7;
   }
   .card-gear-btn:active { opacity: 1; background: var(--surface-inset); }
   .card-menu {
@@ -223,19 +228,19 @@
   }
   .card-menu-item {
     display: block; width: 100%; text-align: left; background: none; border: none;
-    padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--text);
+    padding: 12px 16px; font-size: 15px; font-weight: 600; color: var(--text);
     cursor: pointer; font-family: var(--font); transition: background 0.1s;
   }
   .card-menu-item:active { background: var(--surface-inset); }
 
   .matter-time {
-    font-family: var(--mono); font-size: 18px; font-weight: 600;
+    font-family: var(--mono); font-size: 20px; font-weight: 600;
     color: var(--text-secondary); flex-shrink: 0; text-align: right; line-height: 1.4;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.5px; align-self: flex-start; padding-top: 2px;
   }
   .matter-card.running .matter-time { color: var(--accent); }
   .matter-time .rounded-time {
-    font-size: 13px; font-weight: 500; color: var(--text-muted); display: block;
+    font-size: 16px; font-weight: 500; color: var(--text-secondary); display: block;
     letter-spacing: 0;
   }
   .matter-card.running .matter-time .rounded-time { color: var(--accent-mid); }
@@ -293,19 +298,19 @@
   }
   .intervals-panel.open { display: block; }
   .intervals-header {
-    font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;
+    font-size: 15px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;
     letter-spacing: 1px; padding: 12px 0 8px;
   }
   .interval-item {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 9px 0; border-bottom: 1px solid var(--border-light); font-size: 14px; gap: 8px;
+    padding: 9px 0; border-bottom: 1px solid var(--border-light); font-size: 15px; gap: 8px;
   }
   .interval-item:last-child { border-bottom: none; }
   .interval-times { color: var(--text-secondary); flex: 1; }
-  .interval-duration { font-family: var(--mono); font-size: 13px; color: var(--text-muted); }
+  .interval-duration { font-family: var(--mono); font-size: 15px; color: var(--text-secondary); }
   .interval-edit-btn {
     background: none; border: none; color: var(--blue); cursor: pointer;
-    padding: 4px 10px; font-size: 13px; font-weight: 600; font-family: var(--font);
+    padding: 4px 10px; font-size: 15px; font-weight: 600; font-family: var(--font);
   }
   .interval-live { color: var(--accent); font-style: italic; }
 
@@ -313,7 +318,7 @@
     display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 0 0;
     border-top: 1px solid var(--border-light); margin-top: 6px;
   }
-  .manual-adjust-label { font-size: 13px; font-weight: 600; color: var(--text-muted); flex-shrink: 0; }
+  .manual-adjust-label { font-size: 15px; font-weight: 600; color: var(--text-secondary); flex-shrink: 0; }
   .adjust-step-btn {
     width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border);
     background: var(--surface-inset); color: var(--text); font-size: 18px; font-weight: 600;
@@ -322,25 +327,25 @@
   }
   .adjust-step-btn:active { background: var(--border-light); transform: scale(0.92); }
   .adjust-display {
-    font-family: var(--mono); font-size: 17px; font-weight: 600; color: var(--text);
+    font-family: var(--mono); font-size: 19px; font-weight: 600; color: var(--text);
     min-width: 55px; text-align: center; cursor: text;
     border-bottom: 1px dashed var(--border); padding: 2px 4px;
   }
   .adjust-display-input {
-    font-family: var(--mono); font-size: 17px; font-weight: 600; color: var(--text);
+    font-family: var(--mono); font-size: 19px; font-weight: 600; color: var(--text);
     width: 65px; text-align: center; border: 1px solid var(--accent); border-radius: var(--radius-sm);
     padding: 2px 4px; background: #fff; outline: none;
   }
-  .adjust-hint { font-size: 12px; color: var(--text-muted); }
+  .adjust-hint { font-size: 14px; color: var(--text-secondary); }
 
   /* ===== BADGES ===== */
   .saved-count {
-    font-size: 11px; font-weight: 700; background: var(--accent-light); color: var(--accent);
+    font-size: 13px; font-weight: 700; background: var(--accent-light); color: var(--accent);
     padding: 2px 8px; border-radius: 12px; margin-left: 6px; vertical-align: middle;
     letter-spacing: 0.2px;
   }
   .entry-edited {
-    font-size: 11px; font-weight: 700; color: var(--warning); background: var(--warning-light);
+    font-size: 13px; font-weight: 700; color: var(--warning); background: var(--warning-light);
     padding: 2px 8px; border-radius: 12px; margin-left: 6px; vertical-align: middle;
   }
 
@@ -348,29 +353,29 @@
   .today-header {
     padding: 4px 20px 14px; display: flex; justify-content: space-between; align-items: baseline;
   }
-  .today-label { font-weight: 600; color: var(--text-secondary); font-size: 15px; }
-  .today-total { font-family: var(--mono); font-size: 17px; color: var(--accent); font-weight: 600; }
+  .today-label { font-weight: 600; color: var(--text-secondary); font-size: 16px; }
+  .today-total { font-family: var(--mono); font-size: 18px; color: var(--accent); font-weight: 600; }
 
   .entry-list { padding: 0 14px; }
   .entry-card {
     background: var(--surface); border: 1px solid var(--border-light);
-    border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+    border-radius: var(--radius); padding: 18px; margin-bottom: 10px;
     box-shadow: var(--shadow-sm); border-left: 4px solid var(--accent);
     position: relative;
   }
   .entry-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-  .entry-matter { font-size: 16px; font-weight: 700; }
+  .entry-matter { font-size: 19px; font-weight: 700; }
   .entry-time {
-    font-family: var(--mono); font-size: 16px; color: var(--accent);
+    font-family: var(--mono); font-size: 19px; color: var(--accent);
     font-weight: 600; flex-shrink: 0; margin-left: 12px;
   }
-  .entry-narrative { font-size: 15px; color: var(--text-secondary); line-height: 1.55; }
+  .entry-narrative { font-size: 18px; color: var(--text-secondary); line-height: 1.55; }
   .entry-narrative.missing { color: var(--warning); font-style: italic; }
 
   .entry-actions { display: flex; gap: 8px; margin-top: 12px; }
   .entry-btn {
     background: var(--surface-inset); border: 1px solid var(--border); color: var(--text-secondary);
-    font-family: var(--font); font-size: 13px; font-weight: 600; padding: 7px 14px;
+    font-family: var(--font); font-size: 16px; font-weight: 600; padding: 9px 16px;
     border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s;
   }
   .entry-btn:active { background: var(--border-light); }
@@ -378,7 +383,7 @@
 
   /* ===== EDIT MODAL FIELDS ===== */
   .edit-section-label {
-    font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;
+    font-size: 15px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;
     letter-spacing: 1px; margin: 16px 0 8px;
   }
   .edit-section-label:first-child { margin-top: 0; }
@@ -397,7 +402,7 @@
   }
   .edit-time-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
   .edit-interval-readonly {
-    font-size: 13px; color: var(--text-muted); padding: 6px 0;
+    font-size: 15px; color: var(--text-secondary); padding: 6px 0;
     border-bottom: 1px solid var(--border-light);
   }
   .edit-interval-readonly:last-child { border-bottom: none; }
@@ -418,7 +423,7 @@
   /* ===== SETTINGS ===== */
   .settings-section { padding: 4px 16px 16px; }
   .settings-section h2 {
-    font-size: 11px; font-weight: 700; color: var(--text-muted);
+    font-size: 17px; font-weight: 700; color: var(--text-secondary);
     text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; padding-top: 8px;
   }
   .matter-edit-list { display: flex; flex-direction: column; gap: 6px; }
@@ -428,8 +433,8 @@
     box-shadow: var(--shadow-sm);
   }
   .matter-edit-info { flex: 1; min-width: 0; }
-  .matter-edit-name { font-size: 15px; font-weight: 700; }
-  .matter-edit-detail { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .matter-edit-name { font-size: 16px; font-weight: 700; }
+  .matter-edit-detail { font-size: 15px; color: var(--text-secondary); margin-top: 3px; }
   .delete-matter-btn {
     background: none; border: none; color: var(--text-muted); cursor: pointer;
     padding: 8px; border-radius: 8px;
@@ -443,7 +448,7 @@
   .add-matter-form input {
     width: 100%; background: var(--surface-inset); border: 1px solid var(--border);
     border-radius: var(--radius-sm); color: var(--text); font-family: var(--font);
-    font-size: 15px; padding: 12px 14px; margin-bottom: 10px;
+    font-size: 16px; padding: 12px 14px; margin-bottom: 10px;
     box-shadow: inset 0 1px 2px rgba(44,42,37,0.04);
   }
   .add-matter-form input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
@@ -453,7 +458,7 @@
   .empty-state { text-align: center; padding: 48px 24px; color: var(--text-muted); }
 
   .backup-status {
-    font-size: 13px; color: var(--text-muted); padding: 10px 14px;
+    font-size: 16px; color: var(--text-secondary); padding: 10px 14px;
     background: var(--surface-inset); border-radius: var(--radius-sm);
     margin-bottom: 12px; line-height: 1.5; display: none;
   }
@@ -461,7 +466,7 @@
   .backup-status.success { color: var(--accent); background: var(--accent-light); }
   .backup-status.error { color: var(--danger); background: var(--danger-light); }
   .empty-state svg { width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.35; }
-  .empty-state p { font-size: 15px; line-height: 1.5; }
+  .empty-state p { font-size: 16px; line-height: 1.5; }
 
   /* ===== MODAL ===== */
   .modal-overlay {
@@ -476,7 +481,7 @@
     max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-lg);
   }
   .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 14px; letter-spacing: -0.2px; }
-  .modal p { font-size: 15px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5; }
+  .modal p { font-size: 16px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5; }
   .modal-buttons { display: flex; gap: 10px; margin-top: 18px; }
   .modal-buttons .btn { flex: 1; justify-content: center; padding: 13px; }
   .btn-danger {
@@ -524,8 +529,8 @@
     <h2>Local Backup</h2>
     <div class="add-matter-form" style="margin-top:0">
       <div class="backup-status" id="backupStatus"></div>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Rolling snapshots every 5 minutes and hourly snapshots kept for 48 hours — all automatic.</div>
-      <button class="btn btn-secondary" style="width:100%;justify-content:center;font-size:13px" onclick="restoreAutoBackup()">View Backup Snapshots</button>
+      <div style="font-size:16px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5">Rolling snapshots every 5 minutes and hourly snapshots kept for 48 hours — all automatic.</div>
+      <button class="btn btn-secondary" style="width:100%;justify-content:center;font-size:15px" onclick="restoreAutoBackup()">View Backup Snapshots</button>
     </div>
   </div>
   <div class="settings-section">
@@ -535,20 +540,29 @@
       <div id="cloudConnected" style="display:none">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
           <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></div>
-          <span style="font-size:14px;font-weight:600;color:var(--accent)">Connected to Dropbox</span>
+          <span style="font-size:16px;font-weight:600;color:var(--accent)">Connected to Dropbox</span>
         </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="cloudLastSync">Hourly backups: text (48h) + full data snapshots (48h hourly, then daily for 14 days).</div>
-        <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:8px;font-size:13px" onclick="cloudUploadNow()">Upload Now</button>
-        <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:8px;font-size:13px" onclick="cloudRestore()">Restore from Cloud</button>
-        <button class="btn btn-secondary" style="width:100%;justify-content:center;font-size:13px;color:var(--danger);border-color:var(--danger-light)" onclick="cloudDisconnect()">Disconnect Dropbox</button>
+        <div style="font-size:16px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5" id="cloudLastSync">Hourly backups: text (48h) + full data snapshots (48h hourly, then daily for 14 days).</div>
+        <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:8px;font-size:14px" onclick="cloudUploadNow()">Upload Now</button>
+        <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:8px;font-size:14px" onclick="cloudRestore()">Restore from Cloud</button>
+        <button class="btn btn-secondary" style="width:100%;justify-content:center;font-size:15px;color:var(--danger);border-color:var(--danger-light)" onclick="cloudDisconnect()">Disconnect Dropbox</button>
       </div>
       <div id="cloudSetup">
-        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px">
-          Automatically backs up a readable text file to Dropbox every hour. Open it right in Dropbox to see your entries and timer states. Requires one-time setup:
+        <div style="font-size:16px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px">
+          Connect to Dropbox to back up your data or restore from an existing backup.
         </div>
         <details style="margin-bottom:14px">
-          <summary style="font-size:13px;font-weight:600;color:var(--blue);cursor:pointer;margin-bottom:8px">Setup Instructions (3 min)</summary>
-          <ol style="font-size:13px;color:var(--text-secondary);line-height:1.7;padding-left:20px;margin-top:8px">
+          <summary style="font-size:16px;font-weight:600;color:var(--blue);cursor:pointer;margin-bottom:8px">Restoring? Find your existing App Key</summary>
+          <ol style="font-size:16px;color:var(--text-secondary);line-height:1.7;padding-left:20px;margin-top:8px">
+            <li>Go to <strong>dropbox.com/developers/apps</strong></li>
+            <li>Click your existing app (e.g., "TimeKeep")</li>
+            <li>On the <strong>Settings</strong> tab, copy the <strong>App key</strong></li>
+            <li>Paste it below and connect — your backups will appear automatically</li>
+          </ol>
+        </details>
+        <details style="margin-bottom:14px">
+          <summary style="font-size:16px;font-weight:600;color:var(--blue);cursor:pointer;margin-bottom:8px">First time? Create a Dropbox App (3 min)</summary>
+          <ol style="font-size:16px;color:var(--text-secondary);line-height:1.7;padding-left:20px;margin-top:8px">
             <li>Go to <strong>dropbox.com/developers/apps</strong></li>
             <li>Click <strong>Create app</strong></li>
             <li>Choose <strong>Scoped access</strong> → <strong>App folder</strong></li>
@@ -560,13 +574,13 @@
             <li>Copy the <strong>App key</strong> and paste it below</li>
           </ol>
         </details>
-        <label style="font-size:13px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px">Dropbox App Key</label>
+        <label style="font-size:15px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px">Dropbox App Key</label>
         <input type="text" id="cloudAppKey" placeholder="Paste your Dropbox App Key" autocomplete="off">
         <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="cloudConnect()">Connect Dropbox</button>
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.8</div>
+  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.9</div>
 </div>
 
 <div class="nav">
@@ -800,8 +814,8 @@ function renderTimers() {
         items+=`<div class="interval-item"><span class="interval-times">${fmtClock(iv.start)} – ${fmtClock(iv.end)}</span><span class="interval-duration">${fmtDur(iv.end-iv.start)}</span><button class="interval-edit-btn" onclick="editInterval('${m.id}',${idx})">Edit</button></div>`;
       });
       if(live) items+=`<div class="interval-item interval-live"><span class="interval-times">${fmtClock(live.start)} – now</span><span class="interval-duration">running</span><span></span></div>`;
-      if(!completed.length&&!live) items='<div style="font-size:14px;color:var(--text-muted);padding:10px 0">No intervals yet</div>';
-      ivHtml=`<div class="intervals-panel open"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}" onclick="directEditAdjust('${m.id}',${inc})">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours</span></div><div style="text-align:right;padding-top:8px;border-top:1px solid var(--border);margin-top:10px"><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:13px;font-weight:600;cursor:pointer;padding:4px 0">Discard Time Entries</button></div></div>`;
+      if(!completed.length&&!live) items='<div style="font-size:14px;color:var(--text-secondary);padding:10px 0">No intervals yet</div>';
+      ivHtml=`<div class="intervals-panel open"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}" onclick="directEditAdjust('${m.id}',${inc})">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours</span></div><div style="text-align:right;padding-top:8px;border-top:1px solid var(--border);margin-top:10px"><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:4px 0">Discard Time Entries</button></div></div>`;
     }
 
     const menuItems = `
@@ -860,7 +874,7 @@ function renderTimers() {
           ${descLine ? `<div class="matter-desc">${descLine}</div>` : ''}
         </div>
         <div class="matter-time" data-timer="${m.id}" data-inc="${inc}" data-saved="${saved}">
-          <span class="timer-hms">${fmt(el)}</span><span class="rounded-time">${fmtRound(el,inc)} h</span>${saved?`<span style="display:block;font-size:12px;color:var(--accent-mid);font-weight:600;font-family:var(--font)">${saved} saved</span>`:''}
+          <span class="timer-hms">${fmt(el)}</span><span class="rounded-time">${fmtRound(el,inc)} h</span>${saved?`<span style="display:block;font-size:15px;color:var(--accent-mid);font-weight:600;font-family:var(--font)">${saved} saved</span>`:''}
         </div>
         <div class="card-gear-wrap">
           <button onclick="toggleCardMenu(this)" class="card-gear-btn">
@@ -873,8 +887,8 @@ function renderTimers() {
       ${(el > 0 || isRun || (t?.narrative||'').trim()) ? `<div class="narrative-panel">
         <textarea class="narrative-input" rows="1" placeholder="Paste narrative here..." oninput="updateNarr('${m.id}',this.value);autoGrow(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" onblur="stripPeriod(this,'${m.id}')" onfocus="autoGrow(this)">${t?.narrative||''}</textarea>
         <div class="narrative-row">
-          <button onclick="saveEntry('${m.id}')" style="background:none;border:1px solid var(--border);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;padding:6px 12px;border-radius:var(--radius-sm)">Save Entry</button>
-          <button onclick="spawnTask('${m.parentId||m.id}','${m.id}',event)" style="background:none;border:1px solid var(--border);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;padding:6px 12px;border-radius:var(--radius-sm)">+ Task</button>
+          <button onclick="saveEntry('${m.id}')" style="background:none;border:1px solid var(--border);color:var(--text-secondary);font-size:15px;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:var(--radius-sm)">Save Entry</button>
+          <button onclick="spawnTask('${m.parentId||m.id}','${m.id}',event)" style="background:none;border:1px solid var(--border);color:var(--text-secondary);font-size:15px;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:var(--radius-sm)">+ Task</button>
           <button class="intervals-toggle ${isOpen?'open':''}" onclick="toggleIv('${m.id}')">
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
@@ -887,14 +901,14 @@ function renderTimers() {
   let html='';
   if(recent.length>0){ 
     const rc = isSectionCollapsed('recent');
-    html+=`<div class="section-label section-recent${rc?' collapsed':''}" onclick="toggleSection('recent',this)">Recent</div>`;
+    html+=`<div class="section-label section-recent${rc?' collapsed':''}" onclick="toggleSection('recent',this)">Recent <span class="section-count">${recent.length}</span></div>`;
     html+=`<div class="section-content"${rc?' style="display:none"':''}>`;
     html+=recent.map(m=>renderCard(m,true)).join('');
     html+='</div>';
   }
   if(rest.length>0){ 
     const ac = isSectionCollapsed('allMatters');
-    html+=`<div class="section-label${ac?' collapsed':''}" onclick="toggleSection('allMatters',this)">All Matters</div>`;
+    html+=`<div class="section-label${ac?' collapsed':''}" onclick="toggleSection('allMatters',this)">All Matters <span class="section-count">${rest.length}</span></div>`;
     html+=`<div class="section-content"${ac?' style="display:none"':''}>`;
     html+=rest.map(m=>renderCard(m,false)).join('');
     html+='</div>';
@@ -1209,22 +1223,24 @@ function renderToday(){
     const sectionKey = 'day_' + key;
     const dc = isSectionCollapsed(sectionKey);
     const todayBadge = label === 'Today' ?
-      `<span style="font-weight:700;color:white;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;background:linear-gradient(145deg,#2E9E55,#1B7A3D);padding:3px 10px;border-radius:10px">${label}</span>` :
-      `<span style="font-weight:700;color:var(--text-secondary);font-size:15px;text-transform:uppercase;letter-spacing:1px">${label}</span>`;
+      `<span style="font-weight:700;color:white;font-size:15px;text-transform:uppercase;letter-spacing:0.5px;background:linear-gradient(145deg,#2E9E55,#1B7A3D);padding:3px 10px;border-radius:10px">${label}</span>` :
+      `<span style="font-weight:700;color:var(--text-secondary);font-size:16px;text-transform:uppercase;letter-spacing:1px">${label}</span>`;
 
-    const chevron = `<span data-chevron style="font-size:22px;color:var(--text-muted);transition:transform 0.25s ease;display:inline-block;${dc?'transform:rotate(-90deg)':''}">▾</span>`;
+    const chevron = `<span data-chevron style="font-size:30px;color:var(--text-muted);transition:transform 0.25s ease;display:inline-block;margin-left:10px;padding-left:6px;${dc?'transform:rotate(-90deg)':''}">▾</span>`;
+
+    const entryCount = `<span class="section-count">${dayEntries.length}</span>`;
 
     html += `<div onclick="toggleSection('${sectionKey}',this)" style="padding:16px 4px 10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;-webkit-user-select:none;user-select:none">
-      <div style="display:flex;align-items:center;gap:8px">${chevron}${todayBadge}</div>
-      <div style="display:flex;align-items:center;gap:12px" onclick="event.stopPropagation()">
-        <span style="font-family:var(--mono);font-size:15px;color:var(--accent);font-weight:600">${dayTotal.toFixed(2)} h</span>
-        <button onclick="exportDay('${key}')" style="background:var(--accent-light);border:1px solid var(--accent-mid);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;padding:4px 10px;border-radius:8px;font-family:var(--font)">Export</button>
-        <div style="position:relative;display:inline-block">
+      <div style="display:flex;align-items:center;gap:8px">${todayBadge}${entryCount}</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:600">${dayTotal.toFixed(2)} h</span>
+        <button onclick="event.stopPropagation();exportDay('${key}')" style="background:var(--accent-light);border:1px solid var(--accent-mid);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;padding:5px 12px;border-radius:8px;font-family:var(--font)">Export</button>
+        <div style="position:relative;display:inline-block" onclick="event.stopPropagation()">
           <button onclick="toggleDayMenu(this)" style="background:none;border:none;color:var(--text-muted);font-size:18px;font-weight:700;cursor:pointer;padding:0 4px;line-height:1;letter-spacing:2px">⋯</button>
           <div class="day-overflow-menu" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow);z-index:60;min-width:160px">
-            <button onclick="this.closest('.day-overflow-menu').style.display='none';confirmClearDate('${key}')" style="display:block;width:100%;text-align:left;background:none;border:none;padding:12px 16px;font-size:14px;font-weight:600;color:var(--danger);cursor:pointer;font-family:var(--font)">Clear All Entries</button>
+            <button onclick="this.closest('.day-overflow-menu').style.display='none';confirmClearDate('${key}')" style="display:block;width:100%;text-align:left;background:none;border:none;padding:12px 16px;font-size:15px;font-weight:600;color:var(--danger);cursor:pointer;font-family:var(--font)">Clear All Entries</button>
           </div>
-        </div>
+        </div>${chevron}
       </div>
     </div>`;
 
@@ -1244,7 +1260,7 @@ function renderToday(){
       const dispH = Math.floor(totalMin/60);
       const dispM = String(Math.abs(totalMin)%60).padStart(2,'0');
       const timeStr = totalMin > 0 ? `${dispH}:${dispM}` : `0:00`;
-      html += `<div class="entry-card"><div class="entry-top"><span class="entry-matter">${e.matterName}</span><div style="text-align:right;flex-shrink:0;margin-left:12px"><span class="entry-time" style="margin-left:0">${e.hours} h${eb}</span><div style="font-size:12px;color:var(--text-muted);font-family:var(--mono);margin-top:2px">${timeStr}</div></div></div><div class="entry-narrative ${e.narrative?'':'missing'}">${e.narrative||'No narrative — tap edit to add'}</div><div class="entry-actions" style="justify-content:space-between"><button onclick="confirmDeleteEntry('${e.id}')" style="background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;padding:4px 0;font-family:var(--font)">Delete</button><button class="entry-btn" onclick="editEntry('${e.id}')">Edit</button></div></div>`;
+      html += `<div class="entry-card"><div class="entry-top"><span class="entry-matter">${e.matterName}</span><div style="text-align:right;flex-shrink:0;margin-left:12px"><span class="entry-time" style="margin-left:0">${e.hours} h${eb}</span><div style="font-size:16px;color:var(--text-secondary);font-family:var(--mono);margin-top:2px">${timeStr}</div></div></div><div class="entry-narrative ${e.narrative?'':'missing'}">${e.narrative||'No narrative — tap edit to add'}</div><div class="entry-actions" style="justify-content:space-between"><button onclick="confirmDeleteEntry('${e.id}')" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:4px 0;font-family:var(--font)">Delete</button><button class="entry-btn" onclick="editEntry('${e.id}')">Edit</button></div></div>`;
     });
     html += '</div>';
   });
@@ -1266,7 +1282,7 @@ function editEntry(id){
   // Summary line
   const intervalMin = Math.floor(intervalMs/60000);
   const intervalSec = Math.floor((intervalMs%60000)/1000);
-  let summaryHtml = `<div style="font-size:13px;color:var(--text-secondary);margin-top:6px;line-height:1.5">Interval total: ${intervalMin}m ${intervalSec}s → ${intervalRounded}h`;
+  let summaryHtml = `<div style="font-size:14px;color:var(--text-secondary);margin-top:6px;line-height:1.5">Interval total: ${intervalMin}m ${intervalSec}s → ${intervalRounded}h`;
   if(Math.abs(diff) >= 0.005) {
     summaryHtml += `<br><span style="font-weight:600;color:${diff>0?'var(--accent)':'var(--danger)'}">Manual adjustment: ${diff>0?'+':''}${diff.toFixed(2)}h</span>`;
   }
@@ -1374,7 +1390,7 @@ function getExportTextForDate(dateKey){
 function exportDay(dateKey){
   const text = getExportTextForDate(dateKey);
   document.getElementById('modalTitle').textContent = 'Export';
-  document.getElementById('modalBody').innerHTML = `<pre style="font-family:var(--mono);font-size:13px;line-height:1.6;white-space:pre-wrap;color:var(--text);background:var(--surface-inset);padding:14px;border-radius:var(--radius-sm);border:1px solid var(--border-light);max-height:50vh;overflow-y:auto">${text}</pre>`;
+  document.getElementById('modalBody').innerHTML = `<pre style="font-family:var(--mono);font-size:14px;line-height:1.6;white-space:pre-wrap;color:var(--text);background:var(--surface-inset);padding:14px;border-radius:var(--radius-sm);border:1px solid var(--border-light);max-height:50vh;overflow-y:auto">${text}</pre>`;
   document.getElementById('modalButtons').innerHTML = `
     <button class="btn btn-secondary" onclick="closeModal()">Done</button>
     <button class="btn btn-primary" id="copyExportBtn" onclick="copyDayExport('${dateKey}')">
@@ -1592,7 +1608,7 @@ function showModal(title,msg,onConfirm){
 function closeModal(){document.getElementById('modal').classList.remove('visible');}
 
 setInterval(()=>{
-  document.querySelectorAll('[data-timer]').forEach(el=>{const id=el.dataset.timer,inc=parseFloat(el.dataset.inc)||0.10,s=parseInt(el.dataset.saved)||0,el2=getElapsed(id);el.innerHTML=`${fmt(el2)}<span class="rounded-time">${fmtRound(el2,inc)} h</span>${s?`<span style="display:block;font-size:12px;color:var(--accent-mid);font-weight:600;font-family:var(--font)">${s} saved</span>`:''}`;});
+  document.querySelectorAll('[data-timer]').forEach(el=>{const id=el.dataset.timer,inc=parseFloat(el.dataset.inc)||0.10,s=parseInt(el.dataset.saved)||0,el2=getElapsed(id);el.innerHTML=`${fmt(el2)}<span class="rounded-time">${fmtRound(el2,inc)} h</span>${s?`<span style="display:block;font-size:15px;color:var(--accent-mid);font-weight:600;font-family:var(--font)">${s} saved</span>`:''}`;});
   // Update day total on timers screen
   let dayHrs = entries.filter(e=>isToday(e.timestamp)).reduce((s,e)=>s+parseFloat(e.hours||0),0);
   matters.forEach(m=>{const t=timers[m.id];if(t&&t.intervals&&t.intervals.length>0){const el=getElapsed(m.id);if(el>0)dayHrs+=roundInc(el,m.increment||0.10);}});
@@ -1758,22 +1774,22 @@ function restoreAutoBackup() {
   function renderSlot(s, idx) {
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--surface-inset);border-radius:var(--radius-sm);margin-bottom:6px;border:1px solid var(--border)">
       <div>
-        <div style="font-size:14px;font-weight:600;color:var(--text)">${fmtDate(s.timestamp)} ${fmtTime(s.timestamp)} <span style="font-size:12px;font-weight:500;color:var(--text-muted)">· ${fmtAge(s.timestamp)}</span></div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${s.entries.length} entries · ${s.matters.length} matters</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text)">${fmtDate(s.timestamp)} ${fmtTime(s.timestamp)} <span style="font-size:13px;font-weight:500;color:var(--text-secondary)">· ${fmtAge(s.timestamp)}</span></div>
+        <div style="font-size:14px;color:var(--text-secondary);margin-top:2px">${s.entries.length} entries · ${s.matters.length} matters</div>
       </div>
-      <button class="btn btn-secondary" style="flex:none;padding:8px 14px;font-size:13px" onclick="previewBackupSlot(${idx})">View</button>
+      <button class="btn btn-secondary" style="flex:none;padding:8px 14px;font-size:14px" onclick="previewBackupSlot(${idx})">View</button>
     </div>`;
   }
 
   let bodyHtml = '<p style="margin-bottom:14px">Choose a snapshot to view or restore.</p>';
   if (recentSlots.length > 0) {
-    bodyHtml += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Last 15 minutes</div>';
+    bodyHtml += '<div style="font-size:14px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Last 15 minutes</div>';
     const offset = 0;
     recentSlots.forEach((s, i) => { bodyHtml += renderSlot(all[offset + i], offset + i); });
   }
   if (hourlySlots.length > 0) {
     const offset = recentSlots.length;
-    bodyHtml += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin:12px 0 6px">Hourly (last 48 hours)</div>';
+    bodyHtml += '<div style="font-size:14px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin:12px 0 6px">Hourly (last 48 hours)</div>';
     hourlySlots.forEach((s, i) => { bodyHtml += renderSlot(all[offset + i], offset + i); });
   }
 
@@ -1835,7 +1851,7 @@ function previewBackupSlot(idx) {
 
   document.getElementById('modalTitle').textContent = 'Backup Snapshot';
   document.getElementById('modalBody').innerHTML = `
-    <pre style="font-family:var(--mono);font-size:13px;line-height:1.6;white-space:pre-wrap;color:var(--text);background:var(--surface-inset);padding:14px;border-radius:var(--radius-sm);border:1px solid var(--border-light);max-height:50vh;overflow-y:auto">${text}</pre>`;
+    <pre style="font-family:var(--mono);font-size:14px;line-height:1.6;white-space:pre-wrap;color:var(--text);background:var(--surface-inset);padding:14px;border-radius:var(--radius-sm);border:1px solid var(--border-light);max-height:50vh;overflow-y:auto">${text}</pre>`;
   document.getElementById('modalButtons').innerHTML = `
     <button class="btn btn-secondary" onclick="closeModal();restoreAutoBackup()" style="flex:none">Back</button>
     <button class="btn btn-secondary" id="copySnapshotBtn" onclick="copySnapshotText()" style="flex:1;justify-content:center">Copy</button>
@@ -1914,7 +1930,7 @@ async function cloudConnect() {
 
   // Show instructions and code input
   document.getElementById('cloudSetup').innerHTML = `
-    <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">
+    <div style="font-size:15px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">
       A Dropbox authorization page has opened. After you approve access, Dropbox will show you a <strong>code</strong>. Copy it and paste it here:
     </div>
     <input type="text" id="cloudAuthCode" placeholder="Paste authorization code from Dropbox" autocomplete="off" style="font-family:var(--mono);font-size:14px">
@@ -1923,7 +1939,7 @@ async function cloudConnect() {
       <button class="btn btn-secondary" style="flex:none" onclick="cloudCancelConnect()">Cancel</button>
     </div>
     <div style="margin-top:10px">
-      <a href="${authUrl}" target="_blank" style="font-size:13px;color:var(--blue);font-weight:600;text-decoration:none">↗ Open Dropbox authorization page</a>
+      <a href="${authUrl}" target="_blank" style="font-size:15px;color:var(--blue);font-weight:600;text-decoration:none">↗ Open Dropbox authorization page</a>
     </div>`;
 
   window.open(authUrl, '_blank');
@@ -1968,8 +1984,38 @@ async function cloudFinishConnect() {
     });
 
     localStorage.removeItem('tk_cloud_pending');
-    showCloudStatus('Connected! Hourly backups are now active.', 'success');
     renderCloudUI();
+
+    // Check for existing backups to offer restore
+    try {
+      const checkToken = await getValidAccessToken();
+      if (checkToken) {
+        const listResp = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${checkToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: '', recursive: false })
+        });
+        if (listResp.ok) {
+          const listing = await listResp.json();
+          const jsonFiles = (listing.entries || [])
+            .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-data-') && e.name.endsWith('.json'))
+            .sort((a, b) => new Date(b.server_modified || 0) - new Date(a.server_modified || 0));
+          if (jsonFiles.length > 0) {
+            const newest = jsonFiles[0];
+            const newestDate = new Date(newest.server_modified);
+            const fmtD = newestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const fmtT = newestDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            document.getElementById('modalTitle').textContent = 'Backups Found';
+            document.getElementById('modalBody').innerHTML = `<p style="font-size:16px;color:var(--text-secondary);line-height:1.6">Found ${jsonFiles.length} backup${jsonFiles.length > 1 ? 's' : ''} in Dropbox. The most recent is from <strong>${fmtD} at ${fmtT}</strong>.</p><p style="font-size:16px;color:var(--text-secondary);line-height:1.6;margin-top:8px">Would you like to restore from a backup?</p>`;
+            document.getElementById('modalButtons').innerHTML = `<button class="btn btn-primary" onclick="closeModal();cloudRestore()">Choose a Backup</button><button class="btn btn-secondary" onclick="closeModal()">Skip — Start Fresh</button>`;
+            document.getElementById('modal').classList.add('visible');
+            return;
+          }
+        }
+      }
+    } catch (e) { console.warn('Backup check after connect failed:', e); }
+
+    showCloudStatus('Connected! Hourly backups are now active.', 'success');
 
   } catch (err) {
     showCloudStatus('Connection failed: ' + err.message, 'error');
@@ -2311,7 +2357,7 @@ async function cloudRestore() {
     if (jsonFiles.length === 0) {
       document.getElementById('modalTitle').textContent = 'No Restorable Backups';
       let msg = '<p>No JSON data backups found in Dropbox.</p>';
-      if (txtFiles.length > 0) msg += `<p style="font-size:13px;color:var(--text-secondary)">${txtFiles.length} text backup(s) found, but these are read-only and can't be restored from automatically.</p>`;
+      if (txtFiles.length > 0) msg += `<p style="font-size:15px;color:var(--text-secondary)">${txtFiles.length} text backup(s) found, but these are read-only and can't be restored from automatically.</p>`;
       document.getElementById('modalBody').innerHTML = msg;
       document.getElementById('modalButtons').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">OK</button>';
       document.getElementById('modal').classList.add('visible');
@@ -2346,18 +2392,18 @@ async function cloudRestore() {
       }
       if (dayKey && dayKey !== currentDay) {
         currentDay = dayKey;
-        listHtml += `<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;padding:${i > 0 ? '10px' : '0'} 0 6px">${dayLabel}</div>`;
+        listHtml += `<div style="font-size:14px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;padding:${i > 0 ? '10px' : '0'} 0 6px">${dayLabel}</div>`;
       }
       const sizeKb = f.size ? (f.size / 1024).toFixed(1) + ' KB' : '';
       listHtml += `<button onclick="cloudRestorePick(${i})" style="display:block;width:100%;text-align:left;background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:6px;cursor:pointer;font-family:var(--font)">
-        <div style="font-size:14px;font-weight:600;color:var(--text)">${timeLabel || f.name}</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${sizeKb || ''}</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text)">${timeLabel || f.name}</div>
+        <div style="font-size:14px;color:var(--text-secondary);margin-top:2px">${sizeKb || ''}</div>
       </button>`;
     });
     listHtml += '</div>';
 
     document.getElementById('modalTitle').textContent = 'Restore from Cloud';
-    document.getElementById('modalBody').innerHTML = `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Select a backup to restore:</p>${listHtml}`;
+    document.getElementById('modalBody').innerHTML = `<p style="font-size:15px;color:var(--text-secondary);margin-bottom:12px">Select a backup to restore:</p>${listHtml}`;
     document.getElementById('modalButtons').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>';
     document.getElementById('modal').classList.add('visible');
 
@@ -2409,11 +2455,11 @@ async function cloudRestorePick(idx) {
     document.getElementById('modalTitle').textContent = 'Confirm Restore';
     document.getElementById('modalBody').innerHTML = `
       <p style="font-weight:600">${dateLabel}</p>
-      <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-top:8px">
+      <div style="font-size:15px;color:var(--text-secondary);line-height:1.7;margin-top:8px">
         <strong>${mCount}</strong> matters · <strong>${eCount}</strong> saved entries · <strong>${activeCount}</strong> active timers
-        ${matterNames ? `<div style="margin-top:6px;font-size:12px;color:var(--text-muted)">Matters: ${matterNames}</div>` : ''}
+        ${matterNames ? `<div style="margin-top:6px;font-size:14px;color:var(--text-secondary)">Matters: ${matterNames}</div>` : ''}
       </div>
-      <p style="font-size:13px;color:var(--danger);margin-top:10px;font-weight:600">This will replace all current data.</p>`;
+      <p style="font-size:15px;color:var(--danger);margin-top:10px;font-weight:600">This will replace all current data.</p>`;
     document.getElementById('modalButtons').innerHTML = `
       <button class="btn btn-secondary" onclick="cloudRestore()">Back</button>
       <button class="btn btn-danger" onclick="cloudRestoreConfirm()">Restore</button>`;
