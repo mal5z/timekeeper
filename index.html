@@ -88,14 +88,20 @@
   .timer-list { padding: 4px 14px 8px; }
 
   .section-label {
-    font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;
-    letter-spacing: 1.2px; padding: 14px 4px 8px; margin-top: 2px;
-    display: flex; align-items: center; gap: 6px;
+    font-size: 15px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;
+    letter-spacing: 1px; padding: 16px 4px 10px; margin-top: 2px;
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    -webkit-user-select: none; user-select: none;
   }
   .section-label::before {
     content: ''; width: 7px; height: 7px; border-radius: 50%;
     background: var(--text-muted); flex-shrink: 0;
   }
+  .section-label::after {
+    content: '▾'; font-size: 22px; color: var(--text-muted); margin-left: auto;
+    transition: transform 0.25s ease;
+  }
+  .section-label.collapsed::after { transform: rotate(-90deg); }
   .section-label.section-active::before { background: var(--accent); }
   .section-label.section-recent::before { background: var(--blue); }
   .section-label:first-child { padding-top: 4px; }
@@ -560,7 +566,7 @@
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.7</div>
+  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.8</div>
 </div>
 
 <div class="nav">
@@ -697,7 +703,60 @@ function saveEntry(mid) {
   autoBackup();
 }
 
+// Section collapse state
+const COLLAPSED_KEY = 'tk_collapsed';
+let sectionAnimating = false;
+function getCollapsedSections() { return loadData(COLLAPSED_KEY, {}); }
+function isSectionCollapsed(key) { return !!getCollapsedSections()[key]; }
+function toggleSection(key, headerEl) {
+  const state = getCollapsedSections();
+  state[key] = !state[key];
+  saveData(COLLAPSED_KEY, state);
+  headerEl.classList.toggle('collapsed', state[key]);
+  const chev = headerEl.querySelector('[data-chevron]');
+  if (chev) chev.style.transform = state[key] ? 'rotate(-90deg)' : '';
+
+  const content = headerEl.nextElementSibling;
+  if (!content || !content.classList.contains('section-content')) return;
+
+  sectionAnimating = true;
+  if (state[key]) {
+    content.style.maxHeight = content.scrollHeight + 'px';
+    content.style.overflow = 'hidden';
+    content.offsetHeight;
+    content.style.transition = 'max-height 0.3s ease';
+    content.style.maxHeight = '0';
+    const onEnd = () => {
+      content.removeEventListener('transitionend', onEnd);
+      content.style.display = 'none';
+      content.style.transition = '';
+      content.style.maxHeight = '';
+      content.style.overflow = '';
+      sectionAnimating = false;
+    };
+    content.addEventListener('transitionend', onEnd);
+  } else {
+    content.style.display = '';
+    content.style.maxHeight = '0';
+    content.style.overflow = 'hidden';
+    content.offsetHeight;
+    content.style.transition = 'max-height 0.3s ease';
+    content.style.maxHeight = content.scrollHeight + 'px';
+    const onEnd = () => {
+      content.removeEventListener('transitionend', onEnd);
+      content.style.transition = '';
+      content.style.maxHeight = '';
+      content.style.overflow = '';
+      sectionAnimating = false;
+    };
+    content.addEventListener('transitionend', onEnd);
+  }
+  // Safety timeout in case transitionend doesn't fire
+  setTimeout(() => { sectionAnimating = false; }, 400);
+}
+
 function renderTimers() {
+  if (sectionAnimating) return;
   const list=document.getElementById('timerList');
   // Hide parent matters that have zero time when active spawned tasks exist
   const activeSpawnParents = new Set(matters.filter(m=>m.taskLabel&&m.parentId).map(m=>m.parentId));
@@ -826,8 +885,20 @@ function renderTimers() {
   }
 
   let html='';
-  if(recent.length>0){ html+='<div class="section-label section-recent">Recent</div>'; html+=recent.map(m=>renderCard(m,true)).join(''); }
-  if(rest.length>0){ html+='<div class="section-label">All Matters</div>'; html+=rest.map(m=>renderCard(m,false)).join(''); }
+  if(recent.length>0){ 
+    const rc = isSectionCollapsed('recent');
+    html+=`<div class="section-label section-recent${rc?' collapsed':''}" onclick="toggleSection('recent',this)">Recent</div>`;
+    html+=`<div class="section-content"${rc?' style="display:none"':''}>`;
+    html+=recent.map(m=>renderCard(m,true)).join('');
+    html+='</div>';
+  }
+  if(rest.length>0){ 
+    const ac = isSectionCollapsed('allMatters');
+    html+=`<div class="section-label${ac?' collapsed':''}" onclick="toggleSection('allMatters',this)">All Matters</div>`;
+    html+=`<div class="section-content"${ac?' style="display:none"':''}>`;
+    html+=rest.map(m=>renderCard(m,false)).join('');
+    html+='</div>';
+  }
   list.innerHTML=html;
   list.querySelectorAll('.narrative-input').forEach(el=>{if(el.value)autoGrow(el);});
 }
@@ -1135,13 +1206,17 @@ function renderToday(){
       label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     }
 
+    const sectionKey = 'day_' + key;
+    const dc = isSectionCollapsed(sectionKey);
     const todayBadge = label === 'Today' ?
-      `<span style="font-weight:700;color:white;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;background:linear-gradient(145deg,#2E9E55,#1B7A3D);padding:3px 10px;border-radius:10px">${label}</span>` :
-      `<span style="font-weight:700;color:var(--text-secondary);font-size:14px;text-transform:uppercase;letter-spacing:0.5px">${label}</span>`;
+      `<span style="font-weight:700;color:white;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;background:linear-gradient(145deg,#2E9E55,#1B7A3D);padding:3px 10px;border-radius:10px">${label}</span>` :
+      `<span style="font-weight:700;color:var(--text-secondary);font-size:15px;text-transform:uppercase;letter-spacing:1px">${label}</span>`;
 
-    html += `<div style="padding:14px 4px 8px;display:flex;justify-content:space-between;align-items:center">
-      ${todayBadge}
-      <div style="display:flex;align-items:center;gap:12px">
+    const chevron = `<span data-chevron style="font-size:22px;color:var(--text-muted);transition:transform 0.25s ease;display:inline-block;${dc?'transform:rotate(-90deg)':''}">▾</span>`;
+
+    html += `<div onclick="toggleSection('${sectionKey}',this)" style="padding:16px 4px 10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;-webkit-user-select:none;user-select:none">
+      <div style="display:flex;align-items:center;gap:8px">${chevron}${todayBadge}</div>
+      <div style="display:flex;align-items:center;gap:12px" onclick="event.stopPropagation()">
         <span style="font-family:var(--mono);font-size:15px;color:var(--accent);font-weight:600">${dayTotal.toFixed(2)} h</span>
         <button onclick="exportDay('${key}')" style="background:var(--accent-light);border:1px solid var(--accent-mid);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;padding:4px 10px;border-radius:8px;font-family:var(--font)">Export</button>
         <div style="position:relative;display:inline-block">
@@ -1153,6 +1228,7 @@ function renderToday(){
       </div>
     </div>`;
 
+    html += `<div class="section-content"${dc?' style="display:none"':''}>`;
     dayEntries.forEach(e => {
       const eb = e.timeEdited ? '<span class="entry-edited">edited</span>' : '';
       let intervalMs = 0;
@@ -1170,6 +1246,7 @@ function renderToday(){
       const timeStr = totalMin > 0 ? `${dispH}:${dispM}` : `0:00`;
       html += `<div class="entry-card"><div class="entry-top"><span class="entry-matter">${e.matterName}</span><div style="text-align:right;flex-shrink:0;margin-left:12px"><span class="entry-time" style="margin-left:0">${e.hours} h${eb}</span><div style="font-size:12px;color:var(--text-muted);font-family:var(--mono);margin-top:2px">${timeStr}</div></div></div><div class="entry-narrative ${e.narrative?'':'missing'}">${e.narrative||'No narrative — tap edit to add'}</div><div class="entry-actions" style="justify-content:space-between"><button onclick="confirmDeleteEntry('${e.id}')" style="background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;padding:4px 0;font-family:var(--font)">Delete</button><button class="entry-btn" onclick="editEntry('${e.id}')">Edit</button></div></div>`;
     });
+    html += '</div>';
   });
   list.innerHTML = html;
 }
@@ -2133,15 +2210,13 @@ async function cloudPruneOld() {
     const dayCutoff = now - 14 * 24 * 60 * 60 * 1000;
     const jsonFiles = (listing.entries || [])
       .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-data-') && e.name.endsWith('.json'))
-      .sort((a, b) => b.name.localeCompare(a.name));
+      .sort((a, b) => new Date(b.server_modified || 0) - new Date(a.server_modified || 0));
 
     const keptDays = new Set(); // track which days we've kept one for
     jsonFiles.forEach(f => {
-      const match = f.name.match(/data-(\d{4})-(\d{2})-(\d{2})(?:-(\d{2}))?/);
-      if (!match) return;
-      const hr = match[4] || '00';
-      const fileDate = new Date(`${match[1]}-${match[2]}-${match[3]}T${hr}:00:00Z`).getTime();
-      const dayKey = `${match[1]}-${match[2]}-${match[3]}`;
+      const fileDate = f.server_modified ? new Date(f.server_modified).getTime() : 0;
+      if (!fileDate) return;
+      const dayKey = new Date(f.server_modified).toLocaleDateString('en-CA');
 
       if (fileDate >= hourCutoff) {
         // Within 48h — keep all
@@ -2227,11 +2302,11 @@ async function cloudRestore() {
 
     const jsonFiles = (listing.entries || [])
       .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-data-') && e.name.endsWith('.json'))
-      .sort((a, b) => b.name.localeCompare(a.name));
+      .sort((a, b) => new Date(b.server_modified || 0) - new Date(a.server_modified || 0));
 
     const txtFiles = (listing.entries || [])
       .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-backup-') && e.name.endsWith('.txt'))
-      .sort((a, b) => b.name.localeCompare(a.name));
+      .sort((a, b) => new Date(b.server_modified || 0) - new Date(a.server_modified || 0));
 
     if (jsonFiles.length === 0) {
       document.getElementById('modalTitle').textContent = 'No Restorable Backups';
