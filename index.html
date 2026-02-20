@@ -454,6 +454,7 @@
   .add-matter-form input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
   .add-matter-form input::placeholder { color: var(--text-muted); }
   .inc-btn.active { background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent); }
+  .inc-btn.active-danger { background: #fef2f2; color: var(--danger); border: 1px solid var(--danger); }
 
   .empty-state { text-align: center; padding: 48px 24px; color: var(--text-muted); }
 
@@ -513,9 +514,9 @@
 </div>
 
 <div class="screen active" id="timersScreen">
-  <div id="dayTotalBar" style="padding:10px 18px;text-align:center;font-family:var(--font)">
-    <span style="font-size:17px;color:var(--text-secondary);font-weight:600">Today </span>
-    <span id="dayTotalValue" style="font-family:var(--mono);font-size:17px;color:var(--accent);font-weight:700">0.00 h</span>
+  <div id="dayTotalBar" style="padding:10px 18px;display:flex;justify-content:center;gap:24px;font-family:var(--font)">
+    <span><span style="font-size:16px;color:var(--accent);font-weight:600">Billable </span><span id="dayBillableValue" style="font-family:var(--mono);font-size:17px;color:var(--accent);font-weight:700">0.00 h</span></span>
+    <span><span style="font-size:16px;color:var(--danger);font-weight:600">Non-Billable </span><span id="dayNonBillValue" style="font-family:var(--mono);font-size:17px;color:var(--danger);font-weight:700">0.00 h</span></span>
   </div>
   <div class="timer-list" id="timerList"></div>
 </div>
@@ -580,7 +581,7 @@
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.10</div>
+  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.11</div>
 </div>
 
 <div class="nav">
@@ -699,7 +700,7 @@ function saveEntry(mid) {
   const numberLine = [m.clientNumber, m.matterNumber].filter(Boolean).join('-');
   entries.push({ id:'e'+Date.now(), matterId: m.taskLabel ? (m.parentId || mid) : mid,
     matterName:m.name, matterDetail:m.detail, clientNumber: m.clientNumber||'', matterNumber: m.matterNumber||'',
-    billingNumber: numberLine, taskLabel: m.taskLabel||'',
+    billingNumber: numberLine, taskLabel: m.taskLabel||'', billable: m.billable !== false,
     hours:fmtRound(totalMs,inc), ms:totalMs, rawMs: rawMs, adjustMs: adjMs, increment:inc,
     narrative:t.narrative.trim(), intervals:[...t.intervals], timestamp: t.intervals[0]?.start || Date.now() });
   t.intervals=[]; t.manualAdjustMs=0; t.narrative='';
@@ -855,6 +856,8 @@ function renderTimers() {
       }
     }
 
+    const nbTag = m.billable===false ? '<span style="display:inline-block;font-size:12px;font-weight:700;color:var(--danger);background:#fef2f2;padding:1px 6px;border-radius:6px;margin-left:8px;vertical-align:middle">NB</span>' : '';
+
     return `<div class="matter-card ${isRun?'running':''}" data-id="${m.id}">
       <div class="swipe-wrap">
         <div class="swipe-actions">
@@ -872,7 +875,7 @@ function renderTimers() {
       <div class="swipe-content" ontouchstart="swipeStart(event)" ontouchmove="swipeMove(event,'${m.id}')" ontouchend="swipeEnd(event,'${m.id}')">
       <div class="matter-row">
         <div class="matter-header">
-          <div class="matter-name" onclick="editMatter('${m.id}')" style="cursor:pointer">${m.name}</div>
+          <div class="matter-name" onclick="editMatter('${m.id}')" style="cursor:pointer">${m.name}${nbTag}</div>
           <div class="card-gear-wrap">
             <button onclick="toggleCardMenu(this)" class="card-gear-btn">
               <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -972,16 +975,18 @@ function flipRenderTimers() {
     });
   });
   
-  // Lock tick renders during animation
+  // Lock tick renders during animation and scroll to follow the card
   if (hasAnimation) {
     sectionAnimating = true;
     setTimeout(() => { sectionAnimating = false; }, (maxDuration * 1000) + 100);
+    // Scroll to top so user follows the card
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
 
 function toggleIv(mid){openIntervals[mid]=!openIntervals[mid];renderTimers();}
 function updateNarr(mid,v){timers[mid].narrative=v;saveData('tk_timers',timers);}
-function stripPeriod(el,mid){const v=el.value.replace(/\.+$/,'');if(v!==el.value){el.value=v;updateNarr(mid,v);}}
+function stripPeriod(el,mid){const v=el.value.replace(/[\s.]+$/,'');if(v!==el.value){el.value=v;updateNarr(mid,v);}}
 function autoGrow(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
 function setAdjust(mid,h){timers[mid].manualAdjustMs=(parseFloat(h)||0)*3600000;saveData('tk_timers',timers);}
 function stepAdjust(mid,delta){
@@ -1200,6 +1205,7 @@ function spawnTask(mid, sourceId, e) {
     matterName: m.matterName || '',
     matterNumber: m.matterNumber || '',
     increment: m.increment,
+    billable: m.billable !== false,
     taskLabel: true,
     parentId: mid
   };
@@ -1268,6 +1274,8 @@ function renderToday(){
   sortedKeys.forEach(key => {
     const dayEntries = groups[key];
     const dayTotal = dayEntries.reduce((s,e) => s + parseFloat(e.hours), 0);
+    const dayBill = dayEntries.filter(e=>e.billable!==false).reduce((s,e) => s + parseFloat(e.hours), 0);
+    const dayNonBill = dayEntries.filter(e=>e.billable===false).reduce((s,e) => s + parseFloat(e.hours), 0);
     const d = new Date(key + 'T12:00:00');
     const today = new Date();
     const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
@@ -1293,7 +1301,8 @@ function renderToday(){
     html += `<div onclick="toggleSection('${sectionKey}',this)" style="padding:16px 4px 10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;-webkit-user-select:none;user-select:none">
       <div style="display:flex;align-items:center;gap:8px">${todayBadge}${entryCount}</div>
       <div style="display:flex;align-items:center;gap:12px">
-        <span style="font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:600">${dayTotal.toFixed(2)} h</span>
+        <span style="font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:600">${dayBill.toFixed(2)}</span>
+        ${dayNonBill > 0 ? `<span style="font-family:var(--mono);font-size:16px;color:var(--danger);font-weight:600">${dayNonBill.toFixed(2)}</span>` : ''}
         <button onclick="event.stopPropagation();exportDay('${key}')" style="background:var(--accent-light);border:1px solid var(--accent-mid);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;padding:5px 12px;border-radius:8px;font-family:var(--font)">Export</button>
         <div style="position:relative;display:inline-block" onclick="event.stopPropagation()">
           <button onclick="toggleDayMenu(this)" style="background:none;border:none;color:var(--text-muted);font-size:18px;font-weight:700;cursor:pointer;padding:0 4px;line-height:1;letter-spacing:2px">⋯</button>
@@ -1320,7 +1329,8 @@ function renderToday(){
       const dispH = Math.floor(totalMin/60);
       const dispM = String(Math.abs(totalMin)%60).padStart(2,'0');
       const timeStr = totalMin > 0 ? `${dispH}:${dispM}` : `0:00`;
-      html += `<div class="entry-card"><div class="entry-top"><span class="entry-matter">${e.matterName}</span><div style="text-align:right;flex-shrink:0;margin-left:12px"><span class="entry-time" style="margin-left:0">${e.hours} h${eb}</span><div style="font-size:16px;color:var(--text-secondary);font-family:var(--mono);margin-top:2px">${timeStr}</div></div></div><div class="entry-narrative ${e.narrative?'':'missing'}">${e.narrative||'No narrative — tap edit to add'}</div><div class="entry-actions" style="justify-content:space-between"><button onclick="confirmDeleteEntry('${e.id}')" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:4px 0;font-family:var(--font)">Delete</button><button class="entry-btn" onclick="editEntry('${e.id}')">Edit</button></div></div>`;
+      const nbBadge = e.billable===false ? '<span style="display:inline-block;font-size:12px;font-weight:700;color:var(--danger);background:#fef2f2;padding:1px 6px;border-radius:6px;margin-left:8px;vertical-align:middle">NB</span>' : '';
+      html += `<div class="entry-card"><div class="entry-top"><span class="entry-matter">${e.matterName}${nbBadge}</span><div style="text-align:right;flex-shrink:0;margin-left:12px"><span class="entry-time" style="margin-left:0">${e.hours} h${eb}</span><div style="font-size:16px;color:var(--text-secondary);font-family:var(--mono);margin-top:2px">${timeStr}</div></div></div><div class="entry-narrative ${e.narrative?'':'missing'}">${e.narrative||'No narrative — tap edit to add'}</div><div class="entry-actions" style="justify-content:space-between"><button onclick="confirmDeleteEntry('${e.id}')" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:4px 0;font-family:var(--font)">Delete</button><button class="entry-btn" onclick="editEntry('${e.id}')">Edit</button></div></div>`;
     });
     html += '</div>';
   });
@@ -1443,8 +1453,12 @@ function getExportTextForDate(dateKey){
   const label = d.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   if(!te.length) return 'No entries for this date.';
   let t=`Time Entries — ${label}\n${'━'.repeat(40)}\n\n`;
-  te.forEach(e=>{t+=`${e.matterName}\n${e.matterDetail}\nHours: ${e.hours}\nNarrative: ${e.narrative||'[NONE]'}\n\n`;});
-  t+=`${'━'.repeat(40)}\nTotal: ${te.reduce((s,e)=>s+parseFloat(e.hours),0).toFixed(2)} hours\n`;
+  te.forEach(e=>{t+=`${e.matterName}${e.billable===false?' [NON-BILLABLE]':''}\n${e.matterDetail}\nHours: ${e.hours}\nNarrative: ${e.narrative||'[NONE]'}\n\n`;});
+  const billH = te.filter(e=>e.billable!==false).reduce((s,e)=>s+parseFloat(e.hours),0);
+  const nonBillH = te.filter(e=>e.billable===false).reduce((s,e)=>s+parseFloat(e.hours),0);
+  t+=`${'━'.repeat(40)}\n`;
+  t+=`Billable: ${billH.toFixed(2)} hours\n`;
+  if(nonBillH>0) t+=`Non-Billable: ${nonBillH.toFixed(2)} hours\n`;
   return t;
 }
 function exportDay(dateKey){
@@ -1529,7 +1543,13 @@ function editMatter(mid) {
       <button class="btn btn-secondary inc-btn ${inc===0.10?'active':''}" onclick="this.classList.add('active');this.nextElementSibling.classList.remove('active');document.getElementById('editIncrement').value='0.10'" style="flex:1;justify-content:center">Tenths (0.1)</button>
       <button class="btn btn-secondary inc-btn ${inc===0.25?'active':''}" onclick="this.classList.add('active');this.previousElementSibling.classList.remove('active');document.getElementById('editIncrement').value='0.25'" style="flex:1;justify-content:center">Quarters (0.25)</button>
     </div>
-    <input type="hidden" id="editIncrement" value="${inc}">`;
+    <input type="hidden" id="editIncrement" value="${inc}">
+    <div class="edit-section-label">Billing Type</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary inc-btn ${m.billable!==false?'active':''}" onclick="this.classList.add('active');this.nextElementSibling.classList.remove('active-danger');document.getElementById('editBillable').value='true'" style="flex:1;justify-content:center">Billable</button>
+      <button class="btn btn-secondary inc-btn ${m.billable===false?'active-danger':''}" onclick="this.classList.add('active-danger');this.previousElementSibling.classList.remove('active');document.getElementById('editBillable').value='false'" style="flex:1;justify-content:center">Non-Billable</button>
+    </div>
+    <input type="hidden" id="editBillable" value="${m.billable!==false}">`;
 
   document.getElementById('modalButtons').innerHTML = `
     <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
@@ -1548,6 +1568,7 @@ function saveMatterEdit(mid) {
   const matterNumber = document.getElementById('editMatterNumber').value.trim();
   const displayName = document.getElementById('editDisplayName').value.trim();
   const increment = parseFloat(document.getElementById('editIncrement').value) || 0.10;
+  const billable = document.getElementById('editBillable').value !== 'false';
 
   if (!displayName && !clientName) { closeModal(); return; }
 
@@ -1557,8 +1578,7 @@ function saveMatterEdit(mid) {
   m.matterNumber = matterNumber;
   m.name = displayName || (matterName ? `${clientName} — ${matterName}` : clientName);
   m.increment = increment;
-
-  // Rebuild detail line
+  m.billable = billable;
   let detailParts = [];
   if (matterName) detailParts.push(matterName);
   if (clientNumber || matterNumber) {
@@ -1596,7 +1616,13 @@ function openAddMatter() {
       <button class="btn btn-secondary inc-btn active" onclick="this.classList.add('active');this.nextElementSibling.classList.remove('active');document.getElementById('newIncVal').value='0.10'" style="flex:1;justify-content:center">Tenths (0.1)</button>
       <button class="btn btn-secondary inc-btn" onclick="this.classList.add('active');this.previousElementSibling.classList.remove('active');document.getElementById('newIncVal').value='0.25'" style="flex:1;justify-content:center">Quarters (0.25)</button>
     </div>
-    <input type="hidden" id="newIncVal" value="0.10">`;
+    <input type="hidden" id="newIncVal" value="0.10">
+    <div class="edit-section-label">Billing Type</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary inc-btn active" onclick="this.classList.add('active');this.nextElementSibling.classList.remove('active-danger');document.getElementById('newBillable').value='true'" style="flex:1;justify-content:center">Billable</button>
+      <button class="btn btn-secondary inc-btn" onclick="this.classList.add('active-danger');this.previousElementSibling.classList.remove('active');document.getElementById('newBillable').value='false'" style="flex:1;justify-content:center">Non-Billable</button>
+    </div>
+    <input type="hidden" id="newBillable" value="true">`;
   document.getElementById('modalButtons').innerHTML = `
     <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
     <button class="btn btn-primary" onclick="addMatter()">Add Matter</button>`;
@@ -1622,6 +1648,7 @@ function addMatter(){
   const matterNumber = document.getElementById('newMatterNumber').value.trim();
   const displayName = document.getElementById('newDisplayName').value.trim();
   const increment = parseFloat(document.getElementById('newIncVal').value) || 0.10;
+  const billable = document.getElementById('newBillable').value !== 'false';
 
   if (!clientName) return;
 
@@ -1636,7 +1663,7 @@ function addMatter(){
   const detail = detailParts.join(' ');
 
   const id = 'm' + Date.now();
-  matters.push({ id, name, detail, clientName, clientNumber, matterName, matterNumber, increment });
+  matters.push({ id, name, detail, clientName, clientNumber, matterName, matterNumber, increment, billable });
   timers[id] = { running: false, narrative: '', intervals: [], manualAdjustMs: 0, lastUsed: 0 };
   saveData('tk_matters', matters); saveData('tk_timers', timers);
   closeModal();
@@ -1670,10 +1697,15 @@ function closeModal(){document.getElementById('modal').classList.remove('visible
 setInterval(()=>{
   document.querySelectorAll('[data-timer]').forEach(el=>{const id=el.dataset.timer,inc=parseFloat(el.dataset.inc)||0.10,s=parseInt(el.dataset.saved)||0,el2=getElapsed(id);el.innerHTML=`${fmt(el2)}<span class="rounded-time">${fmtRound(el2,inc)} h</span><span style="display:block;font-size:15px;font-weight:600;font-family:var(--font);min-height:1.2em;${s?'color:var(--accent-mid)':'visibility:hidden'}">${s ? s+' saved' : '&nbsp;'}</span>`;});
   // Update day total on timers screen
-  let dayHrs = entries.filter(e=>isToday(e.timestamp)).reduce((s,e)=>s+parseFloat(e.hours||0),0);
-  matters.forEach(m=>{const t=timers[m.id];if(t&&t.intervals&&t.intervals.length>0){const el=getElapsed(m.id);if(el>0)dayHrs+=roundInc(el,m.increment||0.10);}});
-  const bar=document.getElementById('dayTotalBar'),val=document.getElementById('dayTotalValue');
-  if(dayHrs>0){val.textContent=dayHrs.toFixed(2)+' h';}else{val.textContent='0.00 h';}
+  let dayBill = 0, dayNonBill = 0;
+  entries.filter(e=>isToday(e.timestamp)).forEach(e => {
+    const h = parseFloat(e.hours||0);
+    if (e.billable === false) dayNonBill += h; else dayBill += h;
+  });
+  matters.forEach(m=>{const t=timers[m.id];if(t&&t.intervals&&t.intervals.length>0){const el=getElapsed(m.id);if(el>0){const h=roundInc(el,m.increment||0.10);if(m.billable===false)dayNonBill+=h;else dayBill+=h;}}});
+  const bv=document.getElementById('dayBillableValue'),nv=document.getElementById('dayNonBillValue');
+  if(bv)bv.textContent=dayBill.toFixed(2)+' h';
+  if(nv)nv.textContent=dayNonBill.toFixed(2)+' h';
 },1000);
 
 // ===== BACKUP SYSTEM =====
