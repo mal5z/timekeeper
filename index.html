@@ -304,20 +304,24 @@
   .interval-live { color: var(--accent); font-style: italic; }
 
   .manual-adjust {
-    display: flex; align-items: center; gap: 10px; padding: 12px 0 0;
+    display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 0 0;
     border-top: 1px solid var(--border-light); margin-top: 6px;
   }
   .manual-adjust-label { font-size: 13px; font-weight: 600; color: var(--text-muted); flex-shrink: 0; }
-  .adjust-step-btn {
-    width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border);
-    background: var(--surface-inset); color: var(--text); font-size: 18px; font-weight: 600;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: all 0.15s; flex-shrink: 0;
+  .pill-group {
+    display: flex; border: 1px solid var(--border); border-radius: 20px; overflow: hidden;
   }
-  .adjust-step-btn:active { background: var(--border-light); transform: scale(0.92); }
+  .pill-btn {
+    height: 34px; padding: 0 12px; border: none; border-right: 1px solid var(--border);
+    background: var(--surface-inset); color: var(--text); font-size: 13px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font); transition: background 0.1s;
+  }
+  .pill-btn:last-child { border-right: none; }
+  .pill-btn:active { background: var(--border-light); }
   .adjust-display {
-    font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--text);
-    min-width: 50px; text-align: center;
+    font-family: var(--mono); font-size: 17px; font-weight: 600; color: var(--text);
+    min-width: 55px; text-align: center;
   }
   .adjust-hint { font-size: 12px; color: var(--text-muted); }
 
@@ -525,7 +529,7 @@
           <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></div>
           <span style="font-size:14px;font-weight:600;color:var(--accent)">Connected to Dropbox</span>
         </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="cloudLastSync">Readable text backups upload hourly and auto-delete after 48 hours.</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px" id="cloudLastSync">Hourly backups: text (48h) + full data snapshots (48h hourly, then daily for 14 days).</div>
         <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:8px;font-size:13px" onclick="cloudUploadNow()">Upload Now</button>
         <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:8px;font-size:13px" onclick="cloudRestore()">Restore from Cloud</button>
         <button class="btn btn-secondary" style="width:100%;justify-content:center;font-size:13px;color:var(--danger);border-color:var(--danger-light)" onclick="cloudDisconnect()">Disconnect Dropbox</button>
@@ -554,7 +558,7 @@
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.6</div>
+  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.7</div>
 </div>
 
 <div class="nav">
@@ -736,7 +740,7 @@ function renderTimers() {
       });
       if(live) items+=`<div class="interval-item interval-live"><span class="interval-times">${fmtClock(live.start)} – now</span><span class="interval-duration">running</span><span></span></div>`;
       if(!completed.length&&!live) items='<div style="font-size:14px;color:var(--text-muted);padding:10px 0">No intervals yet</div>';
-      ivHtml=`<div class="intervals-panel open"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours (${inc===0.25?'¼ hr':'⅒ hr'})</span></div><div style="text-align:right;padding-top:8px;border-top:1px solid var(--border);margin-top:10px"><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:13px;font-weight:600;cursor:pointer;padding:4px 0">Discard Time Entries</button></div></div>`;
+      ivHtml=`<div class="intervals-panel open"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><div class="pill-group"><button class="pill-btn" onclick="stepAdjust('${m.id}',-1)">−1h</button><button class="pill-btn" onclick="stepAdjust('${m.id}',-${inc})">−${inc===0.25?'.25':'.10'}</button></div><span class="adjust-display" id="adjDisp_${m.id}">${adjD}</span><div class="pill-group"><button class="pill-btn" onclick="stepAdjust('${m.id}',${inc})">+${inc===0.25?'.25':'.10'}</button><button class="pill-btn" onclick="stepAdjust('${m.id}',1)">+1h</button></div></div><div style="text-align:right;padding-top:8px;border-top:1px solid var(--border);margin-top:10px"><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:13px;font-weight:600;cursor:pointer;padding:4px 0">Discard Time Entries</button></div></div>`;
     }
 
     const menuItems = `
@@ -1167,8 +1171,14 @@ function editEntry(id){
     <div class="edit-section-label">Narrative</div>
     <textarea class="edit-textarea" id="editNarrative">${e.narrative||''}</textarea>
     <div style="display:flex;gap:12px;align-items:flex-end">
-      <div style="flex:1"><div class="edit-section-label">Hours (${il})</div>
-        <input type="number" class="edit-time-input" id="editHours" value="${e.hours}" step="${inc.toFixed(2)}"></div>
+      <div style="flex:1"><div class="edit-section-label">Hours</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 0">
+          <div class="pill-group"><button class="pill-btn" onclick="stepEntryHours(-1)">−1h</button><button class="pill-btn" onclick="stepEntryHours(-${inc})">−${inc===0.25?'.25':'.10'}</button></div>
+          <span class="adjust-display" id="editHoursDisp">${e.hours}</span>
+          <div class="pill-group"><button class="pill-btn" onclick="stepEntryHours(${inc})">+${inc===0.25?'.25':'.10'}</button><button class="pill-btn" onclick="stepEntryHours(1)">+1h</button></div>
+        </div>
+        <input type="hidden" id="editHours" value="${e.hours}">
+      </div>
       <div style="flex:1"><div class="edit-section-label">Date</div>
         <input type="date" class="edit-time-input" id="editDate" value="${dateVal}" style="font-family:var(--font)"></div>
     </div>
@@ -1178,6 +1188,16 @@ function editEntry(id){
     <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
     <button class="btn btn-primary" onclick="saveEntryEdit('${id}')">Save</button>`;
   document.getElementById('modal').classList.add('visible');
+}
+
+function stepEntryHours(delta){
+  const inp=document.getElementById('editHours');
+  const disp=document.getElementById('editHoursDisp');
+  if(!inp||!disp) return;
+  let val=Math.round((parseFloat(inp.value)+delta)*100)/100;
+  if(val<0) val=0;
+  inp.value=val.toFixed(2);
+  disp.textContent=val.toFixed(2);
 }
 
 function saveEntryEdit(id){
@@ -1809,11 +1829,8 @@ async function cloudFinishConnect() {
     });
 
     localStorage.removeItem('tk_cloud_pending');
-    showCloudStatus('Connected! Hourly readable backups are now active.', 'success');
+    showCloudStatus('Connected! Hourly backups are now active.', 'success');
     renderCloudUI();
-
-    // Do an immediate upload
-    cloudAutoUpload();
 
   } catch (err) {
     showCloudStatus('Connection failed: ' + err.message, 'error');
@@ -1866,9 +1883,17 @@ async function getValidAccessToken() {
 }
 
 // Upload readable backup to Dropbox
+// Guard: refuse to upload if data looks like fresh defaults
+function hasRealData() {
+  const realMatters = matters.filter(m => !m.taskLabel && m.clientNumber !== '000000');
+  return realMatters.length > 0 || entries.length > 0;
+}
+
 async function cloudUploadBackup() {
   const cfg = getCloudConfig();
   if (!cfg) return false;
+
+  if (!hasRealData()) { console.log('Cloud upload skipped: no real data'); return false; }
 
   const token = await getValidAccessToken();
   if (!token) return false;
@@ -1976,9 +2001,9 @@ async function cloudUploadBackup() {
   cfg.lastUpload = Date.now();
   saveCloudConfig(cfg);
 
-  // Check if weekly JSON data backup is due
+  // JSON data backup every hour (alongside text)
   const lastJsonUpload = cfg.lastJsonUpload || 0;
-  if (Date.now() - lastJsonUpload > 7 * 24 * 60 * 60 * 1000) {
+  if (Date.now() - lastJsonUpload > 60 * 60 * 1000) {
     await cloudUploadJsonBackup(token, cfg);
   }
 
@@ -1986,9 +2011,10 @@ async function cloudUploadBackup() {
 }
 
 async function cloudUploadJsonBackup(token, cfg) {
+  if (!hasRealData()) { console.log('JSON backup skipped: no real data'); return; }
   try {
     const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
+    const dateStr = now.toISOString().slice(0, 13).replace('T', '-'); // YYYY-MM-DD-HH
     const jsonData = JSON.stringify({ matters, timers, entries, exportedAt: now.toISOString() });
     const jsonPath = `/timekeeper-data-${dateStr}.json`;
     const resp = await fetch('https://content.dropboxapi.com/2/files/upload', {
@@ -2007,7 +2033,7 @@ async function cloudUploadJsonBackup(token, cfg) {
   } catch (err) { console.warn('JSON backup upload failed:', err); }
 }
 
-// Prune old cloud backups: text files by 48h, JSON data files keep last 2
+// Prune old cloud backups: text by 48h, JSON tiered (all hourly 48h + 1/day 14 days)
 async function cloudPruneOld() {
   const token = await getValidAccessToken();
   if (!token) return;
@@ -2036,11 +2062,38 @@ async function cloudPruneOld() {
       }
     });
 
-    // JSON data backups: keep only last 2
+    // JSON data backups: tiered retention
+    // - Keep all hourly for 48h
+    // - Keep one per day for 14 days
+    // - Delete everything older
+    const now = Date.now();
+    const hourCutoff = now - 48 * 60 * 60 * 1000;
+    const dayCutoff = now - 14 * 24 * 60 * 60 * 1000;
     const jsonFiles = (listing.entries || [])
       .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-data-') && e.name.endsWith('.json'))
       .sort((a, b) => b.name.localeCompare(a.name));
-    jsonFiles.slice(2).forEach(e => toDelete.push(e.path_lower));
+
+    const keptDays = new Set(); // track which days we've kept one for
+    jsonFiles.forEach(f => {
+      const match = f.name.match(/data-(\d{4})-(\d{2})-(\d{2})(?:-(\d{2}))?/);
+      if (!match) return;
+      const hr = match[4] || '12';
+      const fileDate = new Date(`${match[1]}-${match[2]}-${match[3]}T${hr}:00:00Z`).getTime();
+      const dayKey = `${match[1]}-${match[2]}-${match[3]}`;
+
+      if (fileDate >= hourCutoff) {
+        // Within 48h — keep all
+        return;
+      } else if (fileDate >= dayCutoff) {
+        // Within 14 days — keep one per day (newest, since sorted desc)
+        if (!keptDays.has(dayKey)) {
+          keptDays.add(dayKey);
+          return;
+        }
+      }
+      // Older than 14 days or duplicate day — delete
+      toDelete.push(f.path_lower);
+    });
 
     for (const path of toDelete) {
       await fetch('https://api.dropboxapi.com/2/files/delete_v2', {
@@ -2073,6 +2126,10 @@ async function cloudAutoUpload() {
 async function cloudUploadNow() {
   const cfg = getCloudConfig();
   if (!cfg) return;
+  if (!hasRealData()) {
+    showCloudStatus('Upload skipped — only sample data detected. Restore your real data first.', 'error');
+    return;
+  }
   showCloudStatus('Uploading…', '');
   try {
     await cloudUploadBackup();
@@ -2098,7 +2155,6 @@ async function cloudRestore() {
   }
 
   try {
-    // List files to find most recent JSON backup
     const listResp = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -2111,24 +2167,77 @@ async function cloudRestore() {
       .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-data-') && e.name.endsWith('.json'))
       .sort((a, b) => b.name.localeCompare(a.name));
 
+    const txtFiles = (listing.entries || [])
+      .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-backup-') && e.name.endsWith('.txt'))
+      .sort((a, b) => b.name.localeCompare(a.name));
+
     if (jsonFiles.length === 0) {
-      document.getElementById('modalTitle').textContent = 'No Cloud Backup Found';
-      document.getElementById('modalBody').innerHTML = '<p>No data backup files were found in Dropbox. Backups upload weekly and the last 2 are kept.</p>';
+      document.getElementById('modalTitle').textContent = 'No Restorable Backups';
+      let msg = '<p>No JSON data backups found in Dropbox.</p>';
+      if (txtFiles.length > 0) msg += `<p style="font-size:13px;color:var(--text-secondary)">${txtFiles.length} text backup(s) found, but these are read-only and can't be restored from automatically.</p>`;
+      document.getElementById('modalBody').innerHTML = msg;
       document.getElementById('modalButtons').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">OK</button>';
       document.getElementById('modal').classList.add('visible');
       return;
     }
 
-    const latest = jsonFiles[0];
-    const match = latest.name.match(/data-(\d{4})-(\d{2})-(\d{2})-(\d{2})/);
-    const dateLabel = match ? new Date(`${match[1]}-${match[2]}-${match[3]}T${match[4]}:00:00`).toLocaleString() : latest.name;
+    // Store files for later use and show picker
+    window._cloudRestoreFiles = jsonFiles;
+    window._cloudRestoreToken = token;
 
-    // Download it
+    let listHtml = '<div style="max-height:300px;overflow-y:auto">';
+    let currentDay = '';
+    jsonFiles.forEach((f, i) => {
+      const match = f.name.match(/data-(\d{4})-(\d{2})-(\d{2})(?:-(\d{2}))?/);
+      let timeLabel = '';
+      let dayKey = '';
+      if (match) {
+        dayKey = `${match[1]}-${match[2]}-${match[3]}`;
+        const hr = match[4] || '12';
+        const d = new Date(`${match[1]}-${match[2]}-${match[3]}T${hr}:00:00`);
+        timeLabel = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      }
+      if (dayKey && dayKey !== currentDay) {
+        currentDay = dayKey;
+        const dayDate = new Date(dayKey + 'T12:00:00');
+        const dayLabel = dayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        listHtml += `<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;padding:${i > 0 ? '10px' : '0'} 0 6px">${dayLabel}</div>`;
+      }
+      const sizeKb = f.size ? (f.size / 1024).toFixed(1) + ' KB' : '';
+      listHtml += `<button onclick="cloudRestorePick(${i})" style="display:block;width:100%;text-align:left;background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:6px;cursor:pointer;font-family:var(--font)">
+        <div style="font-size:14px;font-weight:600;color:var(--text)">${timeLabel || f.name}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${sizeKb || ''}</div>
+      </button>`;
+    });
+    listHtml += '</div>';
+
+    document.getElementById('modalTitle').textContent = 'Restore from Cloud';
+    document.getElementById('modalBody').innerHTML = `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">Select a backup to restore:</p>${listHtml}`;
+    document.getElementById('modalButtons').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>';
+    document.getElementById('modal').classList.add('visible');
+
+  } catch (err) {
+    document.getElementById('modalTitle').textContent = 'Restore Failed';
+    document.getElementById('modalBody').innerHTML = `<p style="color:var(--danger)">${err.message}</p>`;
+    document.getElementById('modalButtons').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">OK</button>';
+    document.getElementById('modal').classList.add('visible');
+  }
+}
+
+async function cloudRestorePick(idx) {
+  const file = window._cloudRestoreFiles[idx];
+  const token = window._cloudRestoreToken;
+  if (!file || !token) return;
+
+  try {
+    document.getElementById('modalBody').innerHTML = '<p style="color:var(--text-secondary)">Downloading backup…</p>';
+    document.getElementById('modalButtons').innerHTML = '';
+
     const dlResp = await fetch('https://content.dropboxapi.com/2/files/download', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Dropbox-API-Arg': JSON.stringify({ path: latest.path_lower })
+        'Dropbox-API-Arg': JSON.stringify({ path: file.path_lower })
       }
     });
     if (!dlResp.ok) throw new Error('Could not download backup');
@@ -2137,38 +2246,67 @@ async function cloudRestore() {
     const mCount = (data.matters || []).length;
     const eCount = (data.entries || []).length;
     const activeCount = Object.values(data.timers || {}).filter(t => t.intervals && t.intervals.length > 0).length;
+    const matterNames = (data.matters || []).filter(m => !m.taskLabel).map(m => m.name).join(', ');
 
-    showModal('Restore from Cloud',
-      `<p>Found backup from <strong>${dateLabel}</strong></p>
-       <p style="font-size:13px;color:var(--text-secondary);line-height:1.6">
-         ${mCount} matters · ${eCount} saved entries · ${activeCount} active timers<br>
-         This will <strong>replace all current data</strong>.
-       </p>`,
-      () => {
-        matters = data.matters || [];
-        timers = data.timers || {};
-        entries = data.entries || [];
-        saveData('tk_matters', matters);
-        saveData('tk_timers', timers);
-        saveData('tk_entries', entries);
-        recomputeSections();
-        renderTimers();
-        renderToday();
-        renderSettings();
-        closeModal();
-        // Show success notification
-        document.getElementById('modalTitle').textContent = '✓ Restore Complete';
-        document.getElementById('modalBody').innerHTML = `<p style="color:var(--accent);font-weight:600">${mCount} matters and ${eCount} entries restored.</p>`;
-        document.getElementById('modalButtons').innerHTML = `<button class="btn btn-primary" onclick="closeModal()">Done</button>`;
-        document.getElementById('modal').classList.add('visible');
-      }
-    );
+    const match = file.name.match(/data-(\d{4})-(\d{2})-(\d{2})(?:-(\d{2}))?/);
+    let dateLabel = file.name;
+    if (match) {
+      const hr = match[4] || '12';
+      const d = new Date(`${match[1]}-${match[2]}-${match[3]}T${hr}:00:00`);
+      dateLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+
+    document.getElementById('modalTitle').textContent = 'Confirm Restore';
+    document.getElementById('modalBody').innerHTML = `
+      <p style="font-weight:600">${dateLabel}</p>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-top:8px">
+        <strong>${mCount}</strong> matters · <strong>${eCount}</strong> saved entries · <strong>${activeCount}</strong> active timers
+        ${matterNames ? `<div style="margin-top:6px;font-size:12px;color:var(--text-muted)">Matters: ${matterNames}</div>` : ''}
+      </div>
+      <p style="font-size:13px;color:var(--danger);margin-top:10px;font-weight:600">This will replace all current data.</p>`;
+    document.getElementById('modalButtons').innerHTML = `
+      <button class="btn btn-secondary" onclick="cloudRestore()">Back</button>
+      <button class="btn btn-danger" onclick="cloudRestoreConfirm()">Restore</button>`;
+
+    window._cloudRestoreData = data;
+    window._cloudRestoreMCount = mCount;
+    window._cloudRestoreECount = eCount;
+
   } catch (err) {
-    document.getElementById('modalTitle').textContent = 'Restore Failed';
-    document.getElementById('modalBody').innerHTML = `<p style="color:var(--danger)">${err.message}</p>`;
-    document.getElementById('modalButtons').innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">OK</button>`;
-    document.getElementById('modal').classList.add('visible');
+    document.getElementById('modalBody').innerHTML = `<p style="color:var(--danger)">Download failed: ${err.message}</p>`;
+    document.getElementById('modalButtons').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">OK</button>';
   }
+}
+
+function cloudRestoreConfirm() {
+  const data = window._cloudRestoreData;
+  if (!data) return;
+  const mCount = window._cloudRestoreMCount;
+  const eCount = window._cloudRestoreECount;
+
+  matters = data.matters || [];
+  timers = data.timers || {};
+  entries = data.entries || [];
+  saveData('tk_matters', matters);
+  saveData('tk_timers', timers);
+  saveData('tk_entries', entries);
+  recomputeSections();
+  renderTimers();
+  renderToday();
+  renderSettings();
+  closeModal();
+
+  document.getElementById('modalTitle').textContent = '✓ Restore Complete';
+  document.getElementById('modalBody').innerHTML = `<p style="color:var(--accent);font-weight:600">${mCount} matters and ${eCount} entries restored.</p>`;
+  document.getElementById('modalButtons').innerHTML = `<button class="btn btn-primary" onclick="closeModal()">Done</button>`;
+  document.getElementById('modal').classList.add('visible');
+
+  // Clean up
+  delete window._cloudRestoreFiles;
+  delete window._cloudRestoreToken;
+  delete window._cloudRestoreData;
+  delete window._cloudRestoreMCount;
+  delete window._cloudRestoreECount;
 }
 
 // UI state
@@ -2187,7 +2325,7 @@ function renderCloudUI() {
     if (cfg.lastUpload) {
       const mins = Math.floor((Date.now() - cfg.lastUpload) / 60000);
       const ago = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : `${Math.floor(mins/60)}h ${mins%60}m ago`;
-      lastSync.textContent = `Last upload: ${ago}. Readable text backups upload hourly, auto-delete after 48h.`;
+      lastSync.textContent = `Last upload: ${ago}.`;
     }
   } else {
     connectedEl.style.display = 'none';
