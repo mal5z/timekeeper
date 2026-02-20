@@ -151,13 +151,6 @@
   }
   .matter-card.running .swipe-content { background: linear-gradient(135deg, #f0faf3 0%, var(--surface) 100%); }
 
-  @keyframes slideIntoRecent {
-    0% { opacity: 0; transform: translateY(-8px) scale(0.98); }
-    100% { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  .matter-card.animate-in {
-    animation: slideIntoRecent 0.35s ease-out both;
-  }
 
   .matter-row {
     padding: 14px 16px; user-select: none;
@@ -587,7 +580,7 @@
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.9</div>
+  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.10</div>
 </div>
 
 <div class="nav">
@@ -670,26 +663,27 @@ function fmtDur(ms) {
   return `${m}m ${s%60}s`;
 }
 
-let animateId = null;
 
 function toggleTimer(mid, e) {
   if(e) e.stopPropagation();
   const t=timers[mid];
   const wasInRest = cachedRestIds.has(mid);
+  const wasRunning = t.running;
   if(t.running) { const iv=t.intervals.find(i=>!i.end); if(iv) iv.end=Date.now(); t.running=false; }
   else {
     Object.keys(timers).forEach(id=>{ if(id!==mid&&timers[id].running){ const iv=timers[id].intervals.find(i=>!i.end); if(iv) iv.end=Date.now(); timers[id].running=false; }});
     t.intervals.push({start:Date.now(),end:null}); t.running=true; t.lastUsed=Date.now(); delete t.excludeRecent;
   }
   saveData('tk_timers',timers);
-  // If it was in All Matters and we just started it, move it to Recent with animation
   if (wasInRest && t.running) {
-    animateId = mid;
     recomputeSections();
   }
-  renderTimers();
-  // Clear animation flag after render
-  setTimeout(() => { animateId = null; }, 400);
+  // Use FLIP animation when starting a timer (reorder or section change may happen)
+  if (!wasRunning && t.running) {
+    flipRenderTimers();
+  } else {
+    renderTimers();
+  }
 }
 
 function saveEntry(mid) {
@@ -773,7 +767,7 @@ function toggleSection(key, headerEl) {
     content.addEventListener('transitionend', onEnd);
   }
   // Safety timeout in case transitionend doesn't fire
-  setTimeout(() => { sectionAnimating = false; }, 400);
+  setTimeout(() => { sectionAnimating = false; }, 1100);
 }
 
 function renderTimers() {
@@ -787,7 +781,12 @@ function renderTimers() {
     const narr = (timers[m.id]?.narrative||'').trim();
     return el > 0 || narr;
   }
-  const recent=matters.filter(m=>cachedRecentIds.has(m.id)&&shouldShow(m)).sort((a,b)=>a.name.localeCompare(b.name));
+  const recent=matters.filter(m=>cachedRecentIds.has(m.id)&&shouldShow(m)).sort((a,b)=>{
+    const ta=timers[a.id], tb=timers[b.id];
+    if(ta?.running && !tb?.running) return -1;
+    if(!ta?.running && tb?.running) return 1;
+    return (tb?.lastUsed||0) - (ta?.lastUsed||0);
+  });
   const rest=matters.filter(m=>cachedRestIds.has(m.id)&&shouldShow(m)).sort((a,b)=>a.name.localeCompare(b.name));
 
   function renderCard(m, isRecent) {
@@ -856,7 +855,7 @@ function renderTimers() {
       }
     }
 
-    return `<div class="matter-card ${isRun?'running':''} ${animateId===m.id?'animate-in':''}" data-id="${m.id}">
+    return `<div class="matter-card ${isRun?'running':''}" data-id="${m.id}">
       <div class="swipe-wrap">
         <div class="swipe-actions">
           ${isRun ? `
@@ -926,6 +925,58 @@ function renderTimers() {
   }
   list.innerHTML=html;
   list.querySelectorAll('.narrative-input').forEach(el=>{if(el.value)autoGrow(el);});
+}
+
+// FLIP animation for reordering cards
+function flipRenderTimers() {
+  const list = document.getElementById('timerList');
+  // First: capture current positions
+  const firstRects = {};
+  list.querySelectorAll('.matter-card[data-id]').forEach(card => {
+    firstRects[card.dataset.id] = card.getBoundingClientRect();
+  });
+  
+  // Execute: re-render (bypass sectionAnimating guard)
+  const wasAnimating = sectionAnimating;
+  sectionAnimating = false;
+  renderTimers();
+  
+  // Last: capture new positions and Invert+Play
+  let hasAnimation = false;
+  let maxDuration = 0;
+  list.querySelectorAll('.matter-card[data-id]').forEach(card => {
+    const id = card.dataset.id;
+    const first = firstRects[id];
+    if (!first) return;
+    const last = card.getBoundingClientRect();
+    const deltaY = first.top - last.top;
+    if (Math.abs(deltaY) < 2) return;
+    hasAnimation = true;
+    card.style.transform = `translateY(${deltaY}px)`;
+    card.style.zIndex = deltaY > 0 ? '10' : '1';
+    card.style.transition = 'none';
+    // Scale duration: 400ms base + more for longer distances, capped at 1.6s
+    const dist = Math.abs(deltaY);
+    const duration = Math.min(1.6, 0.4 + dist / 500);
+    maxDuration = Math.max(maxDuration, duration);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        card.style.transition = `transform ${duration}s cubic-bezier(0.22, 0.61, 0.36, 1)`;
+        card.style.transform = '';
+        card.addEventListener('transitionend', function cleanup() {
+          card.style.transition = '';
+          card.style.zIndex = '';
+          card.removeEventListener('transitionend', cleanup);
+        });
+      });
+    });
+  });
+  
+  // Lock tick renders during animation
+  if (hasAnimation) {
+    sectionAnimating = true;
+    setTimeout(() => { sectionAnimating = false; }, (maxDuration * 1000) + 100);
+  }
 }
 
 function toggleIv(mid){openIntervals[mid]=!openIntervals[mid];renderTimers();}
@@ -1082,10 +1133,8 @@ function startTimerAt(mid, startTime) {
 
   const wasInRest = cachedRestIds.has(mid);
   saveData('tk_timers', timers);
-  if (wasInRest) { animateId = mid; }
   recomputeSections();
-  renderTimers();
-  setTimeout(() => { animateId = null; }, 400);
+  flipRenderTimers();
 }
 
 function stopBackdated(mid, minutes) {
