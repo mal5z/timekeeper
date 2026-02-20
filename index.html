@@ -281,14 +281,14 @@
   .btn-secondary { background: var(--surface-inset); color: var(--text-secondary); border: 1px solid var(--border); }
 
   .intervals-toggle {
-    background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+    background: var(--surface); border: 1px solid var(--accent-mid); color: var(--accent);
     width: 40px; height: 40px; border-radius: var(--radius-sm); display: flex;
     align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
     transition: all 0.2s;
   }
-  .intervals-toggle:active { background: var(--surface-inset); }
+  .intervals-toggle:active { background: var(--accent-light); }
   .intervals-toggle svg { width: 16px; height: 16px; transition: transform 0.25s ease; }
-  .intervals-toggle.open { background: var(--surface-inset); }
+  .intervals-toggle.open { background: var(--accent-light); }
   .intervals-toggle.open svg { transform: rotate(180deg); }
 
   /* ===== INTERVALS PANEL ===== */
@@ -359,23 +359,23 @@
   .entry-list { padding: 0 14px; }
   .entry-card {
     background: var(--surface); border: 1px solid var(--border-light);
-    border-radius: var(--radius); padding: 18px; margin-bottom: 10px;
+    border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px;
     box-shadow: var(--shadow-sm); border-left: 4px solid var(--accent);
     position: relative;
   }
-  .entry-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-  .entry-matter { font-size: 19px; font-weight: 700; }
+  .entry-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .entry-matter { font-size: 17px; font-weight: 700; }
   .entry-time {
-    font-family: var(--mono); font-size: 19px; color: var(--accent);
+    font-family: var(--mono); font-size: 17px; color: var(--accent);
     font-weight: 600; flex-shrink: 0; margin-left: 12px;
   }
-  .entry-narrative { font-size: 18px; color: var(--text-secondary); line-height: 1.55; }
+  .entry-narrative { font-size: 16px; color: var(--text-secondary); line-height: 1.45; padding-right: 70px; }
   .entry-narrative.missing { color: var(--warning); font-style: italic; }
 
-  .entry-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .entry-actions { display: flex; gap: 8px; margin-top: 8px; }
   .entry-btn {
     background: var(--surface-inset); border: 1px solid var(--border); color: var(--text-secondary);
-    font-family: var(--font); font-size: 16px; font-weight: 600; padding: 9px 16px;
+    font-family: var(--font); font-size: 15px; font-weight: 600; padding: 7px 14px;
     border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s;
   }
   .entry-btn:active { background: var(--border-light); }
@@ -585,7 +585,7 @@
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.12</div>
+  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.14</div>
 </div>
 
 <div class="nav">
@@ -616,9 +616,6 @@ let matters = loadData('tk_matters', DEFAULT_MATTERS);
 let timers = loadData('tk_timers', {});
 let entries = loadData('tk_entries', []);
 let openIntervals = {};
-let cachedRecentIds = new Set();
-let cachedRestIds = new Set();
-
 matters.forEach(m => {
   if (!timers[m.id]) timers[m.id] = { running: false, narrative: '', intervals: [], manualAdjustMs: 0, lastUsed: 0 };
   const t = timers[m.id];
@@ -628,12 +625,22 @@ matters.forEach(m => {
 });
 saveData('tk_timers', timers);
 
+let cachedActiveIds = new Set();
+let cachedRecentIds = new Set();
+let cachedRestIds = new Set();
+
 function recomputeSections() {
   const cutoff = Date.now() - 7*24*60*60*1000;
-  cachedRecentIds = new Set(); cachedRestIds = new Set();
+  cachedActiveIds = new Set(); cachedRecentIds = new Set(); cachedRestIds = new Set();
   matters.forEach(m => {
     const t = timers[m.id];
+    // Active: has unsaved time or narrative
+    const el = getElapsed(m.id);
+    const narr = (t?.narrative||'').trim();
+    if (el > 0 || narr) { cachedActiveIds.add(m.id); return; }
+    // Excluded from recent
     if (t && t.excludeRecent) { cachedRestIds.add(m.id); return; }
+    // Recent: used within 7 days
     const isRecent = (t&&t.lastUsed&&t.lastUsed>cutoff) || entries.some(e=>e.matterId===m.id&&e.timestamp>cutoff);
     (isRecent ? cachedRecentIds : cachedRestIds).add(m.id);
   });
@@ -672,23 +679,14 @@ function fmtDur(ms) {
 function toggleTimer(mid, e) {
   if(e) e.stopPropagation();
   const t=timers[mid];
-  const wasInRest = cachedRestIds.has(mid);
-  const wasRunning = t.running;
   if(t.running) { const iv=t.intervals.find(i=>!i.end); if(iv) iv.end=Date.now(); t.running=false; }
   else {
     Object.keys(timers).forEach(id=>{ if(id!==mid&&timers[id].running){ const iv=timers[id].intervals.find(i=>!i.end); if(iv) iv.end=Date.now(); timers[id].running=false; }});
     t.intervals.push({start:Date.now(),end:null}); t.running=true; t.lastUsed=Date.now(); delete t.excludeRecent;
   }
   saveData('tk_timers',timers);
-  if (wasInRest && t.running) {
-    recomputeSections();
-  }
-  // Use FLIP animation when starting a timer (reorder or section change may happen)
-  if (!wasRunning && t.running) {
-    flipRenderTimers();
-  } else {
-    renderTimers();
-  }
+  recomputeSections();
+  flipRenderTimers();
 }
 
 function saveEntry(mid) {
@@ -719,7 +717,7 @@ function saveEntry(mid) {
     saveData('tk_timers', timers);
   }
 
-  recomputeSections(); renderTimers();
+  recomputeSections(); flipRenderTimers();
   autoBackup();
 }
 
@@ -786,6 +784,12 @@ function renderTimers() {
     const narr = (timers[m.id]?.narrative||'').trim();
     return el > 0 || narr;
   }
+  const active=matters.filter(m=>cachedActiveIds.has(m.id)&&shouldShow(m)).sort((a,b)=>{
+    const ta=timers[a.id], tb=timers[b.id];
+    if(ta?.running && !tb?.running) return -1;
+    if(!ta?.running && tb?.running) return 1;
+    return (tb?.lastUsed||0) - (ta?.lastUsed||0);
+  });
   const recent=matters.filter(m=>cachedRecentIds.has(m.id)&&shouldShow(m)).sort((a,b)=>{
     const ta=timers[a.id], tb=timers[b.id];
     if(ta?.running && !tb?.running) return -1;
@@ -794,7 +798,9 @@ function renderTimers() {
   });
   const rest=matters.filter(m=>cachedRestIds.has(m.id)&&shouldShow(m)).sort((a,b)=>a.name.localeCompare(b.name));
 
-  function renderCard(m, isRecent) {
+  function renderCard(m, section) {
+    const isRecent = section === 'recent';
+    const isActive = section === 'active';
     const t=timers[m.id], el=getElapsed(m.id), isRun=t?.running;
     const inc=m.increment||0.10;
     const countId = m.taskLabel ? (m.parentId || m.id) : m.id;
@@ -917,18 +923,25 @@ function renderTimers() {
   }
 
   let html='';
+  if(active.length>0){ 
+    const ac = isSectionCollapsed('active');
+    html+=`<div class="section-label section-active${ac?' collapsed':''}" onclick="toggleSection('active',this)">Active <span class="section-count">${active.length}</span></div>`;
+    html+=`<div class="section-content"${ac?' style="display:none"':''}>`;
+    html+=active.map(m=>renderCard(m,'active')).join('');
+    html+='</div>';
+  }
   if(recent.length>0){ 
     const rc = isSectionCollapsed('recent');
     html+=`<div class="section-label section-recent${rc?' collapsed':''}" onclick="toggleSection('recent',this)">Recent <span class="section-count">${recent.length}</span></div>`;
     html+=`<div class="section-content"${rc?' style="display:none"':''}>`;
-    html+=recent.map(m=>renderCard(m,true)).join('');
+    html+=recent.map(m=>renderCard(m,'recent')).join('');
     html+='</div>';
   }
   if(rest.length>0){ 
-    const ac = isSectionCollapsed('allMatters');
-    html+=`<div class="section-label${ac?' collapsed':''}" onclick="toggleSection('allMatters',this)">All Matters <span class="section-count">${rest.length}</span></div>`;
-    html+=`<div class="section-content"${ac?' style="display:none"':''}>`;
-    html+=rest.map(m=>renderCard(m,false)).join('');
+    const restc = isSectionCollapsed('allMatters');
+    html+=`<div class="section-label${restc?' collapsed':''}" onclick="toggleSection('allMatters',this)">All Matters <span class="section-count">${rest.length}</span></div>`;
+    html+=`<div class="section-content"${restc?' style="display:none"':''}>`;
+    html+=rest.map(m=>renderCard(m,'all')).join('');
     html+='</div>';
   }
   list.innerHTML=html;
@@ -1141,7 +1154,6 @@ function startTimerAt(mid, startTime) {
   t.lastUsed = now;
   delete t.excludeRecent;
 
-  const wasInRest = cachedRestIds.has(mid);
   saveData('tk_timers', timers);
   recomputeSections();
   flipRenderTimers();
@@ -1157,7 +1169,7 @@ function stopBackdated(mid, minutes) {
   }
   t.running = false;
   saveData('tk_timers', timers);
-  renderTimers();
+  flipRenderTimers();
 }
 
 function discardTimer(mid) {
@@ -1182,7 +1194,7 @@ function discardTimer(mid) {
 
     saveData('tk_timers', timers);
     recomputeSections();
-    renderTimers();
+    flipRenderTimers();
   });
 }
 
@@ -1618,9 +1630,10 @@ function saveMatterEdit(mid) {
 let displayNameManuallyEdited = false;
 
 // Long-press on + for Quick Timer
-let lpTimer = null, lpFired = false;
+let lpTimer = null, lpFired = false, lpActive = false;
 function lpStart(e) {
   lpFired = false;
+  lpActive = true;
   lpTimer = setTimeout(() => {
     lpFired = true;
     if (e.cancelable) e.preventDefault();
@@ -1629,8 +1642,9 @@ function lpStart(e) {
 }
 function lpEnd(e) {
   clearTimeout(lpTimer);
-  if (!lpFired) openAddMatter();
+  if (lpActive && !lpFired) openAddMatter();
   lpFired = false;
+  lpActive = false;
 }
 
 function assignTimeTo(sourceMid) {
