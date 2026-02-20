@@ -542,8 +542,8 @@
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
     <div class="add-menu" style="display:none">
-      <button class="add-menu-item" onclick="this.closest('.add-menu').style.display='none';openAddMatter()">New Timer</button>
-      <button class="add-menu-item" onclick="this.closest('.add-menu').style.display='none';quickTimer()">Quick Timer</button>
+      <button class="add-menu-item" onclick="this.closest('.add-menu').style.display='none';openAddMatter()">New Matter</button>
+      <button class="add-menu-item" onclick="this.closest('.add-menu').style.display='none';quickTimer()">Unassigned Timer</button>
     </div>
   </div>
 </div>
@@ -1896,7 +1896,7 @@ function saveMatterEdit(mid) {
 }
 let displayNameManuallyEdited = false;
 
-// Long-press on + for Quick Timer
+// Long-press on + for Unassigned Timer
 function toggleAddMenu(btn) {
   const menu = btn.nextElementSibling;
   const wasOpen = menu.style.display !== 'none';
@@ -2024,7 +2024,7 @@ function quickTimer() {
   const now = new Date();
   const timeLabel = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   const id = 'm' + Date.now();
-  matters.push({ id, name: `Quick Timer — ${timeLabel}`, detail: '', clientName: '', clientNumber: '', matterName: '', matterNumber: '', increment: 0.10, billable: true, isQuickTimer: true });
+  matters.push({ id, name: `Unassigned Timer — ${timeLabel}`, detail: '', clientName: '', clientNumber: '', matterName: '', matterNumber: '', increment: 0.10, billable: true, isQuickTimer: true });
   timers[id] = { running: false, narrative: '', intervals: [], manualAdjustMs: 0, lastUsed: Date.now() };
   // Stop any running timer
   Object.keys(timers).forEach(tid => {
@@ -2124,7 +2124,7 @@ function confirmDeleteMatter(mid){const m=matters.find(x=>x.id===mid);showModal(
 function switchScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  const idx={timers:0,today:1,settings:2};
+  const idx={today:0,timers:1,settings:2};
   const titles={timers:'Timers',today:'Entries',settings:'Settings'};
   document.getElementById(name+'Screen').classList.add('active');
   document.querySelectorAll('.nav-btn')[idx[name]].classList.add('active');
