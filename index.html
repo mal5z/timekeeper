@@ -832,7 +832,7 @@ function renderTimers() {
       });
       if(live) items+=`<div class="interval-item interval-live"><span class="interval-times">${fmtClock(live.start)} – now</span><span class="interval-duration">running</span><span></span></div>`;
       if(!completed.length&&!live) items='<div style="font-size:14px;color:var(--text-secondary);padding:10px 0">No intervals yet</div>';
-      ivHtml=`<div class="intervals-panel open"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}" onclick="directEditAdjust('${m.id}',${inc})">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours</span></div><div style="text-align:right;padding-top:8px;border-top:1px solid var(--border);margin-top:10px"><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:4px 0">Discard Time Entries</button></div></div>`;
+      ivHtml=`<div class="intervals-panel open"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}" onclick="directEditAdjust('${m.id}',${inc})">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours</span></div><div style="padding-top:10px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;justify-content:flex-end;align-items:center;gap:8px"><button onclick="openTransferTime('${m.id}')" style="background:none;border:1px solid var(--border);color:var(--text-secondary);font-size:15px;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:var(--radius-sm)">Transfer to Another Matter</button><button onclick="discardTimer('${m.id}')" style="background:none;border:1px solid var(--danger);color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:var(--radius-sm)">Discard</button></div></div></div>`;
     }
 
     const menuItems = `
@@ -1647,6 +1647,75 @@ function lpEnd(e) {
   lpActive = false;
 }
 
+function openTransferTime(sourceMid) {
+  const m = matters.find(x => x.id === sourceMid);
+  const otherMatters = matters.filter(x => x.id !== sourceMid && !x.taskLabel);
+  if (!otherMatters.length) return;
+  
+  document.getElementById('modalTitle').textContent = 'Transfer Time';
+  document.getElementById('modalBody').innerHTML = `
+    <p style="font-size:15px;color:var(--text-secondary);margin-bottom:12px">Move all time and narrative from <strong>${m.name}</strong> to:</p>
+    <select id="transferTarget" style="width:100%;padding:10px 12px;font-size:15px;font-family:var(--font);border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text)">
+      <option value="">Choose a matter…</option>
+      ${otherMatters.map(x => `<option value="${x.id}">${x.name}</option>`).join('')}
+    </select>`;
+  document.getElementById('modalButtons').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="transferTimeTo('${sourceMid}')">Transfer</button>`;
+  document.getElementById('modal').classList.add('visible');
+}
+
+function transferTimeTo(sourceMid) {
+  const sel = document.getElementById('transferTarget');
+  if (!sel || !sel.value) return;
+  const targetMid = sel.value;
+  const src = timers[sourceMid], tgt = timers[targetMid];
+  if (!src || !tgt) return;
+  
+  const wasRunning = src.running;
+  
+  // Stop source if running
+  if (src.running) {
+    const iv = src.intervals.find(i => !i.end);
+    if (iv) iv.end = Date.now();
+    src.running = false;
+  }
+  
+  // Stop target if running
+  if (tgt.running) {
+    const iv = tgt.intervals.find(i => !i.end);
+    if (iv) iv.end = Date.now();
+    tgt.running = false;
+  }
+  
+  // Transfer intervals and adjustments
+  tgt.intervals = tgt.intervals.concat(src.intervals);
+  tgt.manualAdjustMs = (tgt.manualAdjustMs || 0) + (src.manualAdjustMs || 0);
+  tgt.lastUsed = Date.now();
+  
+  // Append narrative
+  const srcNarr = (src.narrative || '').trim();
+  const tgtNarr = (tgt.narrative || '').trim();
+  if (srcNarr) tgt.narrative = tgtNarr ? tgtNarr + ' ' + srcNarr : srcNarr;
+  
+  // If source was running, start target
+  if (wasRunning) {
+    tgt.intervals.push({ start: Date.now(), end: null });
+    tgt.running = true;
+  }
+  
+  // Clear source (keep the matter)
+  src.intervals = [];
+  src.manualAdjustMs = 0;
+  src.narrative = '';
+  openIntervals[sourceMid] = false;
+  
+  saveData('tk_timers', timers);
+  closeModal();
+  recomputeSections();
+  flipRenderTimers();
+}
+
 function assignTimeTo(sourceMid) {
   const sel = document.getElementById('assignTarget');
   if (!sel || !sel.value) return;
@@ -1773,7 +1842,7 @@ function addMatter(){
   const increment = parseFloat(document.getElementById('newIncVal').value) || 0.10;
   const billable = document.getElementById('newBillable').value !== 'false';
 
-  if (!clientName) return;
+  if (!clientName && !displayName) return;
 
   const name = displayName || (matterName ? `${clientName} — ${matterName}` : clientName);
 
