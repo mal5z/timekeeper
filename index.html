@@ -508,7 +508,7 @@
 
 <div class="header">
   <h1 id="screenTitle">Timers</h1>
-  <button id="addMatterBtn" onclick="openAddMatter()" style="background:linear-gradient(145deg, #2E9E55 0%, #1B7A3D 100%);border:none;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;flex-shrink:0;box-shadow:0 2px 8px rgba(27,122,61,0.3)">
+  <button id="addMatterBtn" ontouchstart="lpStart(event)" ontouchend="lpEnd(event)" ontouchcancel="lpEnd(event)" onmousedown="lpStart(event)" onmouseup="lpEnd(event)" onmouseleave="lpEnd(event)" style="background:linear-gradient(145deg, #2E9E55 0%, #1B7A3D 100%);border:none;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;flex-shrink:0;box-shadow:0 2px 8px rgba(27,122,61,0.3)">
     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
 </div>
@@ -585,7 +585,7 @@
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.11</div>
+  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.12</div>
 </div>
 
 <div class="nav">
@@ -830,8 +830,9 @@ function renderTimers() {
     }
 
     const menuItems = `
+      ${isRecent ? `<button onclick="this.closest('.card-menu').style.display='none';removeFromRecent('${m.id}')" class="card-menu-item">Remove from Recent</button>` : ''}
       <button onclick="this.closest('.card-menu').style.display='none';editMatter('${m.id}')" class="card-menu-item">Edit Matter</button>
-      ${isRecent ? `<button onclick="this.closest('.card-menu').style.display='none';removeFromRecent('${m.id}')" class="card-menu-item">Remove from Recent</button>` : ''}`;
+      <button onclick="this.closest('.card-menu').style.display='none';confirmDeleteMatter('${m.id}')" class="card-menu-item" style="color:var(--danger)">Delete Matter</button>`;
 
     // Find most recent interval end across all timers (excluding this matter)
     let lastStopBtn = '';
@@ -860,7 +861,7 @@ function renderTimers() {
       }
     }
 
-    const nbTag = m.billable===false ? '<span style="display:inline-block;font-size:12px;font-weight:700;color:var(--danger);background:#fef2f2;padding:1px 6px;border-radius:6px;margin-left:8px;vertical-align:middle">NB</span>' : '';
+    const nameColor = m.billable===false ? 'var(--danger)' : 'var(--accent)';
 
     return `<div class="matter-card ${isRun?'running':''}" data-id="${m.id}">
       <div class="swipe-wrap">
@@ -879,7 +880,7 @@ function renderTimers() {
       <div class="swipe-content" ontouchstart="swipeStart(event)" ontouchmove="swipeMove(event,'${m.id}')" ontouchend="swipeEnd(event,'${m.id}')">
       <div class="matter-row">
         <div class="matter-header">
-          <div class="matter-name" onclick="editMatter('${m.id}')" style="cursor:pointer">${m.name}${nbTag}</div>
+          <div class="matter-name" onclick="editMatter('${m.id}')" style="cursor:pointer;color:${nameColor}">${m.name}</div>
           <div class="card-gear-wrap">
             <button onclick="toggleCardMenu(this)" class="card-gear-btn">
               <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -1562,11 +1563,21 @@ function editMatter(mid) {
       <button class="btn btn-secondary inc-btn ${m.billable!==false?'active':''}" onclick="this.classList.add('active');this.nextElementSibling.classList.remove('active-danger');document.getElementById('editBillable').value='true'" style="flex:1;justify-content:center">Billable</button>
       <button class="btn btn-secondary inc-btn ${m.billable===false?'active-danger':''}" onclick="this.classList.add('active-danger');this.previousElementSibling.classList.remove('active');document.getElementById('editBillable').value='false'" style="flex:1;justify-content:center">Non-Billable</button>
     </div>
-    <input type="hidden" id="editBillable" value="${m.billable!==false}">`;
-
+    <input type="hidden" id="editBillable" value="${m.billable!==false}">
+    ${(() => {
+      const otherMatters = matters.filter(x => x.id !== mid && !x.taskLabel);
+      if (otherMatters.length === 0) return '';
+      const hasTime = getElapsed(mid) > 0 || (timers[mid]?.narrative||'').trim();
+      if (!hasTime) return '';
+      return `<div class="edit-section-label">Assign Time to Existing Matter</div>
+        <select id="assignTarget" style="width:100%;padding:10px 12px;font-size:15px;font-family:var(--font);border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text)">
+          <option value="">Choose a matter…</option>
+          ${otherMatters.map(x => `<option value="${x.id}">${x.name}</option>`).join('')}
+        </select>
+        <button class="btn btn-secondary" onclick="assignTimeTo('${mid}')" style="margin-top:8px;width:100%;justify-content:center;font-weight:600">Transfer &amp; Remove This Timer</button>`;
+    })()}`;
   document.getElementById('modalButtons').innerHTML = `
     <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-    <button onclick="closeModal();confirmDeleteMatter('${mid}')" style="background:none;border:none;color:var(--danger);font-size:14px;font-weight:600;cursor:pointer;padding:10px">Delete</button>
     <button class="btn btn-primary" onclick="saveMatterEdit('${mid}')">Save</button>`;
   document.getElementById('modal').classList.add('visible');
 }
@@ -1605,6 +1616,91 @@ function saveMatterEdit(mid) {
   renderTimers();
 }
 let displayNameManuallyEdited = false;
+
+// Long-press on + for Quick Timer
+let lpTimer = null, lpFired = false;
+function lpStart(e) {
+  lpFired = false;
+  lpTimer = setTimeout(() => {
+    lpFired = true;
+    if (e.cancelable) e.preventDefault();
+    quickTimer();
+  }, 500);
+}
+function lpEnd(e) {
+  clearTimeout(lpTimer);
+  if (!lpFired) openAddMatter();
+  lpFired = false;
+}
+
+function assignTimeTo(sourceMid) {
+  const sel = document.getElementById('assignTarget');
+  if (!sel || !sel.value) return;
+  const targetMid = sel.value;
+  const src = timers[sourceMid], tgt = timers[targetMid];
+  if (!src || !tgt) return;
+  
+  // Stop source if running
+  if (src.running) {
+    const iv = src.intervals.find(i => !i.end);
+    if (iv) iv.end = Date.now();
+    src.running = false;
+  }
+  
+  // Stop target if running (intervals would overlap)
+  if (tgt.running) {
+    const iv = tgt.intervals.find(i => !i.end);
+    if (iv) iv.end = Date.now();
+    tgt.running = false;
+  }
+  
+  // Transfer intervals
+  tgt.intervals = tgt.intervals.concat(src.intervals);
+  tgt.manualAdjustMs = (tgt.manualAdjustMs || 0) + (src.manualAdjustMs || 0);
+  tgt.lastUsed = Date.now();
+  
+  // Append narrative
+  const srcNarr = (src.narrative || '').trim();
+  const tgtNarr = (tgt.narrative || '').trim();
+  if (srcNarr) tgt.narrative = tgtNarr ? tgtNarr + ' ' + srcNarr : srcNarr;
+  
+  // Restart target timer
+  tgt.intervals.push({ start: Date.now(), end: null });
+  tgt.running = true;
+  
+  // Remove source matter
+  matters = matters.filter(x => x.id !== sourceMid);
+  delete timers[sourceMid];
+  
+  saveData('tk_matters', matters);
+  saveData('tk_timers', timers);
+  closeModal();
+  recomputeSections();
+  flipRenderTimers();
+}
+
+function quickTimer() {
+  const now = new Date();
+  const timeLabel = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const id = 'm' + Date.now();
+  matters.push({ id, name: `Quick Timer — ${timeLabel}`, detail: '', clientName: '', clientNumber: '', matterName: '', matterNumber: '', increment: 0.10, billable: true, isQuickTimer: true });
+  timers[id] = { running: false, narrative: '', intervals: [], manualAdjustMs: 0, lastUsed: Date.now() };
+  // Stop any running timer
+  Object.keys(timers).forEach(tid => {
+    if (tid !== id && timers[tid].running) {
+      const iv = timers[tid].intervals.find(i => !i.end);
+      if (iv) iv.end = Date.now();
+      timers[tid].running = false;
+    }
+  });
+  // Start immediately
+  timers[id].intervals.push({ start: Date.now(), end: null });
+  timers[id].running = true;
+  saveData('tk_matters', matters);
+  saveData('tk_timers', timers);
+  recomputeSections();
+  flipRenderTimers();
+}
 
 function openAddMatter() {
   displayNameManuallyEdited = false;
