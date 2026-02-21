@@ -10,14 +10,14 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Billable</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #D5D0C7;
+    --bg: #F2F2F7;
     --surface: #FFFFFF;
     --surface-inset: #F8F7F5;
-    --border: #C4BFB4;
-    --border-light: #C4BFB4;
+    --border: #D1D1D6;
+    --border-light: #D1D1D6;
     --text: #2C2A25;
     --text-secondary: #6B665C;
     --text-muted: #A09A8E;
@@ -37,7 +37,7 @@
     --shadow-lg: 0 10px 30px rgba(44,42,37,0.12), 0 2px 8px rgba(44,42,37,0.06);
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --font: 'Source Sans 3', -apple-system, system-ui, sans-serif;
+    --font: -apple-system, 'SF Pro Text', system-ui, sans-serif;
     --mono: 'IBM Plex Mono', 'SF Mono', monospace;
   }
 
@@ -52,22 +52,18 @@
   .nav {
     position: fixed; bottom: 0; left: 0; right: 0;
     background: var(--surface);
-    border-top: 1px solid var(--border);
+    border-top: 0.5px solid var(--border);
     display: flex; padding-bottom: var(--safe-bottom); z-index: 100;
-    box-shadow: 0 -2px 10px rgba(44,42,37,0.05);
+    box-shadow: 0 -0.5px 0 rgba(0,0,0,0.1);
   }
   .nav-btn {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
     padding: 10px 0 8px; background: none; border: none; color: var(--text-muted);
-    font-family: var(--font); font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
-    text-transform: uppercase; cursor: pointer; transition: color 0.2s;
+    font-family: var(--font); font-size: 10px; font-weight: 500;
+    cursor: pointer; transition: color 0.2s;
     position: relative;
   }
-  .nav-btn.active { color: var(--accent); font-weight: 700; }
-  .nav-btn.active::before {
-    content: ''; position: absolute; top: 0; left: 20%; right: 20%;
-    height: 3px; background: linear-gradient(90deg, var(--accent-mid), var(--accent)); border-radius: 0 0 3px 3px;
-  }
+  .nav-btn.active { color: var(--accent); font-weight: 600; }
   .nav-btn svg { width: 22px; height: 22px; }
 
   /* ===== HEADER ===== */
@@ -88,20 +84,23 @@
   .timer-list { padding: 4px 14px 8px; }
 
   .section-label {
-    font-size: 17px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;
-    letter-spacing: 1px; padding: 16px 4px 10px; margin-top: 2px;
-    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    font-size: 16px; font-weight: 700; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 16px 4px 8px; margin-top: 2px;
+    display: flex; align-items: center; gap: 6px; cursor: pointer;
     -webkit-user-select: none; user-select: none;
   }
   .section-label::before {
-    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
     background: var(--text-muted); flex-shrink: 0;
   }
   .section-label::after {
-    content: '▾'; font-size: 30px; color: var(--text-muted); margin-left: auto;
+    content: ''; width: 8px; height: 8px;
+    border-right: 1.5px solid var(--text-muted); border-bottom: 1.5px solid var(--text-muted);
+    transform: rotate(45deg); margin-left: auto; margin-right: 4px;
     transition: transform 0.25s ease;
   }
-  .section-label.collapsed::after { transform: rotate(-90deg); }
+  .section-label.collapsed::after { transform: rotate(-45deg); }
   .section-label.section-active::before { background: var(--accent); }
   .section-label.section-recent::before { background: var(--blue); }
   .section-label:first-child { padding-top: 4px; }
@@ -133,18 +132,18 @@
     display: flex; align-items: stretch;
   }
   .swipe-action-btn {
-    width: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center;
     border: none; cursor: pointer; font-family: var(--font);
-    font-size: 14px; font-weight: 700; color: white; gap: 2px;
+    font-size: 13px; font-weight: 600; color: white; gap: 1px;
   }
-  .swipe-action-btn.sa-1 { background: var(--accent-mid); }
-  .swipe-action-btn.sa-5 { background: var(--accent); }
-  .swipe-action-btn.sa-10 { background: #14602F; }
-  .swipe-action-btn.sa-last { background: var(--blue); }
-  .swipe-action-btn.sa-stop1 { background: #E05353; }
-  .swipe-action-btn.sa-stop5 { background: var(--danger); }
-  .swipe-action-btn.sa-stop10 { background: #8B1A1A; }
-  .swipe-action-btn span { font-size: 15px; font-weight: 800; }
+  .swipe-action-btn.sa-1 { background: #34C759; }
+  .swipe-action-btn.sa-5 { background: #30B350; }
+  .swipe-action-btn.sa-10 { background: #248A3D; }
+  .swipe-action-btn.sa-last { background: #007AFF; }
+  .swipe-action-btn.sa-stop1 { background: #FF6961; }
+  .swipe-action-btn.sa-stop5 { background: #FF3B30; }
+  .swipe-action-btn.sa-stop10 { background: #D70015; }
+  .swipe-action-btn span { font-size: 16px; font-weight: 700; }
   .swipe-content {
     position: relative; z-index: 1; background: var(--surface);
     transition: transform 0.25s ease;
@@ -165,19 +164,19 @@
 
   .timer-toggle {
     width: 50px; height: 50px; border-radius: 50%; border: none;
-    background: linear-gradient(145deg, #e8f5ed 0%, #d0ebd8 100%); color: var(--accent); display: flex;
+    background: var(--accent-light); color: var(--accent); display: flex;
     align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
     transition: all 0.2s ease;
   }
   .timer-toggle:active { transform: scale(0.88); }
   .matter-card.running .timer-toggle {
-    background: linear-gradient(145deg, #2E9E55 0%, #1B7A3D 100%); color: white;
-    box-shadow: 0 3px 12px rgba(27,122,61,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+    background: var(--accent); color: white;
+    box-shadow: none;
     animation: pulse 2s ease-in-out infinite;
   }
   @keyframes pulse {
-    0%, 100% { box-shadow: 0 3px 12px rgba(27,122,61,0.35), inset 0 1px 0 rgba(255,255,255,0.2); }
-    50% { box-shadow: 0 3px 16px rgba(27,122,61,0.5), 0 0 0 4px rgba(27,122,61,0.08), inset 0 1px 0 rgba(255,255,255,0.2); }
+    0%, 100% { box-shadow: none; }
+    50% { box-shadow: 0 0 0 4px rgba(27,122,61,0.12); }
   }
   .timer-toggle svg { width: 20px; height: 20px; }
 
@@ -264,7 +263,7 @@
   .narrative-panel {
     padding: 0 16px 14px;
     background: var(--surface-inset);
-    border-top: 1px solid #E8E5DF;
+    border-top: 1px solid #E5E5EA;
   }
   .narrative-preview {
     font-size: 15px; line-height: 1.4; padding: 10px 0 0;
@@ -279,12 +278,12 @@
     border-radius: var(--radius-sm); color: var(--text); font-family: var(--font);
     font-size: 16px; line-height: 1.5; padding: 12px 14px; margin-top: 12px;
     transition: border-color 0.2s, box-shadow 0.2s;
-    box-shadow: inset 0 1px 2px rgba(44,42,37,0.04);
+    
     box-sizing: border-box; resize: none; overflow: hidden;
   }
   .narrative-input:focus {
     outline: none; border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-light), inset 0 1px 2px rgba(44,42,37,0.04);
+    box-shadow: none;
   }
   .narrative-input::placeholder { color: var(--text-muted); }
 
@@ -317,16 +316,16 @@
   /* ===== INTERVALS PANEL ===== */
   .intervals-panel {
     max-height: 0; overflow: hidden;
-    background: var(--surface-inset); border-top: 0px solid #E8E5DF;
+    background: var(--surface-inset); border-top: 0px solid #E5E5EA;
     transition: max-height 0.35s ease, border-top 0.1s;
   }
-  .intervals-panel.open { max-height: 2000px; border-top: 1px solid #E8E5DF; transition: max-height 0.45s ease-in, border-top 0.1s; }
+  .intervals-panel.open { max-height: 2000px; border-top: 1px solid #E5E5EA; transition: max-height 0.45s ease-in, border-top 0.1s; }
   .iv-collapse-bar {
     display: flex; justify-content: center; padding: 6px 0 4px; cursor: pointer;
     border-top: 1px solid var(--border-light); margin: 8px 16px 0;
   }
   .intervals-header {
-    font-size: 15px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;
+    font-size: 16px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;
     letter-spacing: 1px; padding: 12px 0 8px;
   }
   .interval-item {
@@ -411,7 +410,7 @@
 
   /* ===== EDIT MODAL FIELDS ===== */
   .edit-section-label {
-    font-size: 15px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;
+    font-size: 16px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;
     letter-spacing: 1px; margin: 16px 0 8px;
   }
   .edit-section-label:first-child { margin-top: 0; }
@@ -419,16 +418,16 @@
     width: 100%; min-height: 80px; background: var(--surface-inset); border: 1px solid var(--border);
     border-radius: var(--radius-sm); color: var(--text); font-family: var(--font);
     font-size: 16px; line-height: 1.5; padding: 12px 14px; resize: vertical;
-    box-shadow: inset 0 1px 2px rgba(44,42,37,0.04);
+    
   }
-  .edit-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+  .edit-textarea:focus { outline: none; border-color: var(--accent); box-shadow: none; }
   .edit-time-input {
     width: 100%; background: var(--surface-inset); border: 1px solid var(--border);
     border-radius: var(--radius-sm); color: var(--text); font-family: var(--mono);
     font-size: 18px; padding: 12px 14px;
-    box-shadow: inset 0 1px 2px rgba(44,42,37,0.04);
+    
   }
-  .edit-time-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+  .edit-time-input:focus { outline: none; border-color: var(--accent); box-shadow: none; }
   .edit-interval-readonly {
     font-size: 15px; color: var(--text-secondary); padding: 6px 0;
     border-bottom: 1px solid var(--border-light);
@@ -445,7 +444,7 @@
     border-radius: var(--radius-sm); color: var(--text); font-family: var(--mono);
     font-size: 16px; padding: 10px 12px;
   }
-  .edit-interval-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+  .edit-interval-row input:focus { outline: none; border-color: var(--accent); box-shadow: none; }
 
   /* ===== EXPORT ===== */
   /* ===== SETTINGS ===== */
@@ -477,9 +476,9 @@
     width: 100%; background: var(--surface-inset); border: 1px solid var(--border);
     border-radius: var(--radius-sm); color: var(--text); font-family: var(--font);
     font-size: 16px; padding: 12px 14px; margin-bottom: 10px;
-    box-shadow: inset 0 1px 2px rgba(44,42,37,0.04);
+    
   }
-  .add-matter-form input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+  .add-matter-form input:focus { outline: none; border-color: var(--accent); box-shadow: none; }
   .add-matter-form input::placeholder { color: var(--text-muted); }
   .inc-btn.active { background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent); }
   .inc-btn.active-danger { background: #fef2f2; color: var(--danger); border: 1px solid var(--danger); }
@@ -537,7 +536,7 @@
 <div class="header">
   <h1 id="screenTitle">Timers</h1>
   <div id="addMatterBtn" style="position:relative;flex-shrink:0">
-    <button onclick="toggleAddMenu(this)" style="background:linear-gradient(145deg, #2E9E55 0%, #1B7A3D 100%);border:none;height:34px;border-radius:17px;display:flex;align-items:center;gap:2px;padding:0 10px 0 8px;cursor:pointer;color:white;box-shadow:0 2px 8px rgba(27,122,61,0.3)">
+    <button onclick="toggleAddMenu(this)" style="background:var(--accent);border:none;height:34px;border-radius:17px;display:flex;align-items:center;gap:2px;padding:0 10px 0 8px;cursor:pointer;color:white">
       <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
@@ -545,6 +544,11 @@
       <button class="add-menu-item" onclick="this.closest('.add-menu').style.display='none';openAddMatter()">New Matter</button>
       <button class="add-menu-item" onclick="this.closest('.add-menu').style.display='none';quickTimer()">Unassigned Timer</button>
     </div>
+  </div>
+  <div id="addEntryBtn" style="display:none;flex-shrink:0">
+    <button onclick="openNewEntry()" style="background:var(--accent);border:none;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
   </div>
 </div>
 
@@ -557,12 +561,9 @@
 </div>
 
 <div class="screen" id="todayScreen">
-  <div id="entryTotalBar" style="padding:10px 18px;display:flex;justify-content:center;gap:24px;font-family:var(--font);position:relative">
+  <div id="entryTotalBar" style="padding:10px 18px;display:flex;justify-content:center;gap:24px;font-family:var(--font)">
     <span><span style="font-size:16px;color:var(--accent);font-weight:600">Billable </span><span id="entryBillableValue" style="font-family:var(--mono);font-size:17px;color:var(--accent);font-weight:700">0.00 h</span></span>
     <span><span style="font-size:16px;color:var(--danger);font-weight:600">Non-Billable </span><span id="entryNonBillValue" style="font-family:var(--mono);font-size:17px;color:var(--danger);font-weight:700">0.00 h</span></span>
-    <button onclick="openNewEntry()" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:linear-gradient(145deg, #2E9E55 0%, #1B7A3D 100%);border:none;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:white;box-shadow:0 2px 8px rgba(27,122,61,0.3)">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    </button>
   </div>
   <div id="entryList" style="padding:0 14px"></div>
 </div>
@@ -623,7 +624,7 @@
       </div>
     </div>
   </div>
-  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v0.17</div>
+  <div style="text-align:center;padding:20px 0 10px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px">Billable v1.0</div>
 </div>
 
 <div class="nav">
@@ -914,20 +915,20 @@ function renderTimers() {
       <div class="swipe-wrap">
         <div class="swipe-actions">
           ${isRun ? `
-          <button class="swipe-action-btn sa-stop1" onclick="stopBackdated('${m.id}',1)"><span>1</span>min ago</button>
-          <button class="swipe-action-btn sa-stop5" onclick="stopBackdated('${m.id}',5)"><span>5</span>min ago</button>
-          <button class="swipe-action-btn sa-stop10" onclick="stopBackdated('${m.id}',10)"><span>10</span>min ago</button>
+          <button class="swipe-action-btn sa-stop1" onclick="stopBackdated('${m.id}',1)"><span>1m</span>ago</button>
+          <button class="swipe-action-btn sa-stop5" onclick="stopBackdated('${m.id}',5)"><span>5m</span>ago</button>
+          <button class="swipe-action-btn sa-stop10" onclick="stopBackdated('${m.id}',10)"><span>10m</span>ago</button>
           ` : `
-          <button class="swipe-action-btn sa-1" onclick="startBackdated('${m.id}',1)"><span>1</span>min ago</button>
-          <button class="swipe-action-btn sa-5" onclick="startBackdated('${m.id}',5)"><span>5</span>min ago</button>
-          <button class="swipe-action-btn sa-10" onclick="startBackdated('${m.id}',10)"><span>10</span>min ago</button>
+          <button class="swipe-action-btn sa-1" onclick="startBackdated('${m.id}',1)"><span>1m</span>ago</button>
+          <button class="swipe-action-btn sa-5" onclick="startBackdated('${m.id}',5)"><span>5m</span>ago</button>
+          <button class="swipe-action-btn sa-10" onclick="startBackdated('${m.id}',10)"><span>10m</span>ago</button>
           ${lastStopBtn}
           `}
         </div>
       <div class="swipe-content" ontouchstart="swipeStart(event)" ontouchmove="swipeMove(event,'${m.id}')" ontouchend="swipeEnd(event,'${m.id}')">
       <div class="matter-row">
         <div class="matter-header">
-          <div class="matter-name" onclick="editMatter('${m.id}')" style="cursor:pointer;color:${nameColor}">${m.name}</div>
+          <div class="matter-name" style="color:${nameColor}">${m.name}</div>
           <div class="card-gear-wrap">
             <button onclick="toggleCardMenu(this)" class="card-gear-btn">
               <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -939,7 +940,7 @@ function renderTimers() {
           <button class="timer-toggle" onclick="toggleTimer('${m.id}',event)">
             ${isRun?'<svg fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>':'<svg fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>'}
           </button>
-          <div class="matter-info" onclick="editMatter('${m.id}')" style="cursor:pointer">
+          <div class="matter-info">
             ${numberLine ? `<div class="matter-detail">${numberLine}</div>` : ''}
             ${descLine ? `<div class="matter-desc">${descLine}</div>` : ''}
           </div>
@@ -1149,7 +1150,7 @@ const SWIPE_THRESHOLD = 60;
 
 function getSwipeMax(el) {
   const actions = el.closest('.swipe-wrap')?.querySelector('.swipe-actions');
-  return actions ? actions.scrollWidth : 192;
+  return actions ? actions.scrollWidth : 216;
 }
 
 function swipeStart(e) {
@@ -1434,8 +1435,8 @@ function renderToday(){
       const dispH = Math.floor(totalMin/60);
       const dispM = String(Math.abs(totalMin)%60).padStart(2,'0');
       const timeStr = totalMin > 0 ? `${dispH}:${dispM}` : `0:00`;
-      const nbBadge = e.billable===false ? '<span style="display:inline-block;font-size:12px;font-weight:700;color:var(--danger);background:#fef2f2;padding:1px 6px;border-radius:6px;margin-left:8px;vertical-align:middle">NB</span>' : '';
-      html += `<div class="entry-card"><div class="entry-top"><span class="entry-matter">${e.matterName}${nbBadge}</span><div style="text-align:right;flex-shrink:0;margin-left:12px"><span class="entry-time" style="margin-left:0">${e.hours} h${eb}</span><div style="font-size:16px;color:var(--text-secondary);font-family:var(--mono);margin-top:2px">${timeStr}</div></div></div><div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Narrative</div><div class="entry-narrative ${e.narrative?'':'missing'}">${e.narrative||'No narrative — tap edit to add'}</div><div class="entry-actions" style="justify-content:flex-end"><button onclick="confirmDeleteEntry('${e.id}')" style="background:none;border:1px solid var(--danger);color:var(--danger);font-family:var(--font);font-size:15px;font-weight:600;padding:7px 14px;border-radius:var(--radius-sm);cursor:pointer">Delete</button><button class="entry-btn" onclick="editEntry('${e.id}')">Edit</button></div></div>`;
+      const timeColor = e.billable===false ? 'color:var(--danger)' : '';
+      html += `<div class="entry-card"><div class="entry-top"><span class="entry-matter">${e.matterName}</span><div style="text-align:right;flex-shrink:0;margin-left:12px"><span class="entry-time" style="margin-left:0;${timeColor}">${e.hours} h${eb}</span><div style="font-size:16px;color:var(--text-secondary);font-family:var(--mono);margin-top:2px">${timeStr}</div></div></div><div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Narrative</div><div class="entry-narrative ${e.narrative?'':'missing'}">${e.narrative||'No narrative — tap edit to add'}</div><div class="entry-actions" style="justify-content:flex-end"><button onclick="confirmDeleteEntry('${e.id}')" style="background:none;border:1px solid var(--danger);color:var(--danger);font-family:var(--font);font-size:15px;font-weight:600;padding:7px 14px;border-radius:var(--radius-sm);cursor:pointer">Delete</button><button class="entry-btn" onclick="editEntry('${e.id}')">Edit</button></div></div>`;
     });
     html += '</div>';
   });
@@ -2130,6 +2131,7 @@ function switchScreen(name){
   document.querySelectorAll('.nav-btn')[idx[name]].classList.add('active');
   document.getElementById('screenTitle').textContent=titles[name];
   document.getElementById('addMatterBtn').style.display = name==='timers' ? 'block' : 'none';
+  document.getElementById('addEntryBtn').style.display = name==='today' ? 'block' : 'none';
   if(name==='timers'){recomputeSections();renderTimers();}
   if(name==='today')renderToday(); if(name==='settings')renderCloudUI();
 }
