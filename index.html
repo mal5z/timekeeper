@@ -1405,7 +1405,7 @@ function renderToday(){
     const entryCount = `<span class="section-count">${dayEntries.length}</span>`;
 
     html += `<div onclick="toggleSection('${sectionKey}',this)" style="padding:16px 4px 10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;-webkit-user-select:none;user-select:none">
-      <div style="display:flex;align-items:center;gap:8px">${todayBadge}${entryCount}</div>
+      <div style="display:flex;align-items:center;gap:8px">${todayBadge}</div>
       <div style="display:flex;align-items:center;gap:12px">
         <span style="font-family:var(--font);font-size:16px;color:var(--accent);font-weight:600">${dayBill.toFixed(2)}</span>
         ${dayNonBill > 0 ? `<span style="font-family:var(--font);font-size:16px;color:var(--danger);font-weight:600">${dayNonBill.toFixed(2)}</span>` : ''}
