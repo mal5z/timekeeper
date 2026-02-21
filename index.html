@@ -561,10 +561,7 @@
 </div>
 
 <div class="screen" id="todayScreen">
-  <div id="entryTotalBar" style="padding:10px 18px;display:flex;justify-content:center;gap:24px;font-family:var(--font)">
-    <span><span style="font-size:16px;color:var(--accent);font-weight:600">Billable </span><span id="entryBillableValue" style="font-family:var(--font);font-size:17px;color:var(--accent);font-weight:600">0.00 h</span></span>
-    <span><span style="font-size:16px;color:var(--danger);font-weight:600">Non-Billable </span><span id="entryNonBillValue" style="font-family:var(--font);font-size:17px;color:var(--danger);font-weight:600">0.00 h</span></span>
-  </div>
+  <div id="entryTotalBar" style="display:none"></div>
   <div id="entryList" style="padding:0 14px"></div>
 </div>
 
@@ -833,7 +830,7 @@ function renderTimers() {
     const ta=timers[a.id], tb=timers[b.id];
     if(ta?.running && !tb?.running) return -1;
     if(!ta?.running && tb?.running) return 1;
-    return (tb?.lastUsed||0) - (ta?.lastUsed||0);
+    return a.name.localeCompare(b.name);
   });
   const rest=matters.filter(m=>cachedRestIds.has(m.id)&&shouldShow(m)).sort((a,b)=>a.name.localeCompare(b.name));
 
