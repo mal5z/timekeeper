@@ -1348,7 +1348,17 @@ function deleteInterval(mid,idx){
   saveData('tk_timers',timers);closeModal();renderTimers();
 }
 
-function isToday(ts){const d=new Date(ts),n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();}
+// Treat timestamps before 3 AM as the prior day for billing purposes
+function billingDate(ts) {
+  const d = new Date(ts);
+  if (d.getHours() < 3) d.setDate(d.getDate() - 1);
+  return d;
+}
+function billingDateKey(ts) {
+  const d = billingDate(ts);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function isToday(ts){const d=billingDate(ts),n=billingDate(Date.now());return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();}
 
 function renderToday(){
   const list=document.getElementById('entryList');
@@ -1363,11 +1373,10 @@ function renderToday(){
   
   if(!entries.length){list.innerHTML=`<div class="empty-state"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><p>No entries saved yet.</p></div>`;return;}
 
-  // Group entries by date key (YYYY-MM-DD), sorted newest first
+  // Group entries by billing date (before 3 AM counts as prior day)
   const groups = {};
   entries.forEach(e => {
-    const d = new Date(e.timestamp);
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const key = billingDateKey(e.timestamp);
     if (!groups[key]) groups[key] = [];
     groups[key].push(e);
   });
@@ -1380,8 +1389,8 @@ function renderToday(){
     const dayBill = dayEntries.filter(e=>e.billable!==false).reduce((s,e) => s + parseFloat(e.hours), 0);
     const dayNonBill = dayEntries.filter(e=>e.billable===false).reduce((s,e) => s + parseFloat(e.hours), 0);
     const d = new Date(key + 'T12:00:00');
-    const today = new Date();
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+    const today = billingDate(Date.now());
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
     let label;
     if (d.getFullYear()===today.getFullYear() && d.getMonth()===today.getMonth() && d.getDate()===today.getDate()) {
       label = 'Today';
@@ -1548,8 +1557,8 @@ function saveEntryEdit(id){
 function confirmDeleteEntry(id){showModal('Delete Entry','Remove this time entry?',()=>{entries=entries.filter(e=>e.id!==id);saveData('tk_entries',entries);renderToday();});}
 
 function openNewEntry() {
-  const today = new Date();
-  const dateVal = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const bd = billingDate(Date.now());
+  const dateVal = `${bd.getFullYear()}-${String(bd.getMonth()+1).padStart(2,'0')}-${String(bd.getDate()).padStart(2,'0')}`;
   const matterOpts = matters.filter(m => !m.taskLabel).map(m =>
     `<option value="${m.id}">${m.name}</option>`
   ).join('');
@@ -1733,10 +1742,7 @@ function saveNewEntry() {
 }
 
 function getExportTextForDate(dateKey){
-  const te = entries.filter(e => {
-    const ed = new Date(e.timestamp);
-    return `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}` === dateKey;
-  });
+  const te = entries.filter(e => billingDateKey(e.timestamp) === dateKey);
   const d = new Date(dateKey + 'T12:00:00');
   const label = d.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   if(!te.length) return 'No entries for this date.';
@@ -1792,15 +1798,9 @@ document.addEventListener('click', function(e) {
 function confirmClearDate(dateKey){
   const d = new Date(dateKey + 'T12:00:00');
   const label = d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
-  const count = entries.filter(e => {
-    const ed = new Date(e.timestamp);
-    return `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}` === dateKey;
-  }).length;
+  const count = entries.filter(e => billingDateKey(e.timestamp) === dateKey).length;
   showModal('Clear Day', `Remove all ${count} entries for ${label}?`, () => {
-    entries = entries.filter(e => {
-      const ed = new Date(e.timestamp);
-      return `${ed.getFullYear()}-${String(ed.getMonth()+1).padStart(2,'0')}-${String(ed.getDate()).padStart(2,'0')}` !== dateKey;
-    });
+    entries = entries.filter(e => billingDateKey(e.timestamp) !== dateKey);
     saveData('tk_entries', entries); renderToday();
   });
 }
