@@ -115,7 +115,7 @@
     background: var(--surface); border: 1.5px solid var(--border);
     border-radius: var(--radius); margin-bottom: 14px;
     box-shadow: var(--shadow-sm); transition: all 0.25s ease;
-    border-left: 4px solid transparent;
+    border-left: 4px solid var(--border);
     position: relative; overflow: hidden;
   }
   .matter-card.running {
@@ -188,7 +188,7 @@
   .matter-detail {
     font-size: 16px; font-weight: 700; color: var(--text-secondary);
     line-height: 1.4;
-    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
   }
   .matter-desc {
     font-size: 16px; color: var(--text-secondary); margin-top: 3px;
@@ -248,7 +248,7 @@
   .add-menu-item + .add-menu-item { border-top: 1px solid var(--border-light); }
 
   .matter-time {
-    font-family: var(--mono); font-size: 20px; font-weight: 600;
+    font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 600;
     color: var(--text-secondary); flex-shrink: 0; text-align: right; line-height: 1.4;
     letter-spacing: -0.5px;
   }
@@ -334,7 +334,7 @@
   }
   .interval-item:last-child { border-bottom: none; }
   .interval-times { color: var(--text-secondary); flex: 1; }
-  .interval-duration { font-family: var(--mono); font-size: 15px; color: var(--text-secondary); }
+  .interval-duration { font-variant-numeric: tabular-nums; font-size: 15px; color: var(--text-secondary); }
   .interval-edit-btn {
     background: none; border: none; color: var(--blue); cursor: pointer;
     padding: 4px 10px; font-size: 15px; font-weight: 600; font-family: var(--font);
@@ -354,12 +354,12 @@
   }
   .adjust-step-btn:active { background: var(--border-light); transform: scale(0.92); }
   .adjust-display {
-    font-family: var(--mono); font-size: 19px; font-weight: 600; color: var(--text);
+    font-variant-numeric: tabular-nums; font-size: 19px; font-weight: 600; color: var(--text);
     min-width: 55px; text-align: center; cursor: text;
     border-bottom: 1px dashed var(--border); padding: 2px 4px;
   }
   .adjust-display-input {
-    font-family: var(--mono); font-size: 19px; font-weight: 600; color: var(--text);
+    font-variant-numeric: tabular-nums; font-size: 19px; font-weight: 600; color: var(--text);
     width: 65px; text-align: center; border: 1px solid var(--accent); border-radius: var(--radius-sm);
     padding: 2px 4px; background: #fff; outline: none;
   }
@@ -381,19 +381,19 @@
     padding: 4px 20px 14px; display: flex; justify-content: space-between; align-items: baseline;
   }
   .today-label { font-weight: 600; color: var(--text-secondary); font-size: 16px; }
-  .today-total { font-family: var(--mono); font-size: 18px; color: var(--accent); font-weight: 600; }
+  .today-total { font-variant-numeric: tabular-nums; font-size: 18px; color: var(--accent); font-weight: 600; }
 
   .entry-list { padding: 0 14px; }
   .entry-card {
     background: var(--surface); border: 1px solid var(--border-light);
     border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px;
-    box-shadow: var(--shadow-sm); border-left: 4px solid var(--accent);
+    box-shadow: var(--shadow-sm); border-left: 4px solid var(--border);
     position: relative;
   }
   .entry-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
   .entry-matter { font-size: 17px; font-weight: 700; }
   .entry-time {
-    font-family: var(--mono); font-size: 17px; color: var(--accent);
+    font-variant-numeric: tabular-nums; font-size: 17px; color: var(--accent);
     font-weight: 600; flex-shrink: 0; margin-left: 12px;
   }
   .entry-narrative { font-size: 16px; color: var(--text-secondary); line-height: 1.45; padding-right: 70px; }
@@ -554,16 +554,16 @@
 
 <div class="screen active" id="timersScreen">
   <div id="dayTotalBar" style="padding:10px 18px;display:flex;justify-content:center;gap:24px;font-family:var(--font)">
-    <span><span style="font-size:16px;color:var(--accent);font-weight:600">Billable </span><span id="dayBillableValue" style="font-family:var(--mono);font-size:17px;color:var(--accent);font-weight:700">0.00 h</span></span>
-    <span><span style="font-size:16px;color:var(--danger);font-weight:600">Non-Billable </span><span id="dayNonBillValue" style="font-family:var(--mono);font-size:17px;color:var(--danger);font-weight:700">0.00 h</span></span>
+    <span><span style="font-size:16px;color:var(--accent);font-weight:600">Billable </span><span id="dayBillableValue" style="font-family:var(--font);font-size:17px;color:var(--accent);font-weight:600">0.00 h</span></span>
+    <span><span style="font-size:16px;color:var(--danger);font-weight:600">Non-Billable </span><span id="dayNonBillValue" style="font-family:var(--font);font-size:17px;color:var(--danger);font-weight:600">0.00 h</span></span>
   </div>
   <div class="timer-list" id="timerList"></div>
 </div>
 
 <div class="screen" id="todayScreen">
   <div id="entryTotalBar" style="padding:10px 18px;display:flex;justify-content:center;gap:24px;font-family:var(--font)">
-    <span><span style="font-size:16px;color:var(--accent);font-weight:600">Billable </span><span id="entryBillableValue" style="font-family:var(--mono);font-size:17px;color:var(--accent);font-weight:700">0.00 h</span></span>
-    <span><span style="font-size:16px;color:var(--danger);font-weight:600">Non-Billable </span><span id="entryNonBillValue" style="font-family:var(--mono);font-size:17px;color:var(--danger);font-weight:700">0.00 h</span></span>
+    <span><span style="font-size:16px;color:var(--accent);font-weight:600">Billable </span><span id="entryBillableValue" style="font-family:var(--font);font-size:17px;color:var(--accent);font-weight:600">0.00 h</span></span>
+    <span><span style="font-size:16px;color:var(--danger);font-weight:600">Non-Billable </span><span id="entryNonBillValue" style="font-family:var(--font);font-size:17px;color:var(--danger);font-weight:600">0.00 h</span></span>
   </div>
   <div id="entryList" style="padding:0 14px"></div>
 </div>
@@ -771,7 +771,7 @@ function toggleSection(key, headerEl) {
   saveData(COLLAPSED_KEY, state);
   headerEl.classList.toggle('collapsed', state[key]);
   const chev = headerEl.querySelector('[data-chevron]');
-  if (chev) chev.style.transform = state[key] ? 'rotate(-90deg)' : '';
+  if (chev) chev.style.transform = state[key] ? 'rotate(-45deg)' : 'rotate(45deg)';
 
   const content = headerEl.nextElementSibling;
   if (!content || !content.classList.contains('section-content')) return;
@@ -873,7 +873,7 @@ function renderTimers() {
       if(live) items+=`<div class="interval-item interval-live"><span class="interval-times">${fmtClock(live.start)} – now</span><span class="interval-duration">running</span><span></span></div>`;
       if(!completed.length&&!live) items='<div style="font-size:14px;color:var(--text-secondary);padding:10px 0">No intervals yet</div>';
       const narrTextarea = `<div style="padding:12px 16px 0"><div style="font-size:13px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Narrative</div><textarea class="narrative-input" id="narrInput_${m.id}" rows="1" placeholder="Paste narrative here..." oninput="updateNarr('${m.id}',this.value);autoGrow(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" onblur="stripPeriod(this,'${m.id}')" onfocus="autoGrow(this)" style="margin-top:0">${t?.narrative||''}</textarea></div>`;
-      ivHtml=`<div class="intervals-panel${isOpen?' open':''}" id="ivPanel_${m.id}">${narrTextarea}<div style="padding:0 16px"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}" onclick="directEditAdjust('${m.id}',${inc})">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours</span></div><div style="padding-top:10px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center"><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Discard</button><button onclick="openTransferTime('${m.id}')" style="background:none;border:none;color:#2563EB;font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Transfer matter</button></div></div></div><div class="iv-collapse-bar" onclick="toggleIv('${m.id}')"><svg width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></div></div>`;
+      ivHtml=`<div class="intervals-panel${isOpen?' open':''}" id="ivPanel_${m.id}">${narrTextarea}<div style="padding:0 16px"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}" onclick="directEditAdjust('${m.id}',${inc})">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours</span></div><div style="padding-top:10px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center"><button onclick="openTransferTime('${m.id}')" style="background:none;border:none;color:#2563EB;font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Transfer matter</button><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Discard</button></div></div></div><div class="iv-collapse-bar" onclick="toggleIv('${m.id}')"><svg width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></div></div>`;
     }
 
     const menuItems = `
@@ -1400,15 +1400,15 @@ function renderToday(){
       `<span style="font-weight:700;color:white;font-size:15px;text-transform:uppercase;letter-spacing:0.5px;background:linear-gradient(145deg,#2E9E55,#1B7A3D);padding:3px 10px;border-radius:10px">${label}</span>` :
       `<span style="font-weight:700;color:var(--text-secondary);font-size:16px;text-transform:uppercase;letter-spacing:1px">${label}</span>`;
 
-    const chevron = `<span data-chevron style="font-size:30px;color:var(--text-muted);transition:transform 0.25s ease;display:inline-block;margin-left:10px;padding-left:6px;${dc?'transform:rotate(-90deg)':''}">▾</span>`;
+    const chevron = `<span data-chevron style="display:inline-block;width:8px;height:8px;border-right:1.5px solid var(--text-muted);border-bottom:1.5px solid var(--text-muted);transform:rotate(${dc?'-45deg':'45deg'});transition:transform 0.25s ease;margin-left:10px;padding-left:6px"></span>`;
 
     const entryCount = `<span class="section-count">${dayEntries.length}</span>`;
 
     html += `<div onclick="toggleSection('${sectionKey}',this)" style="padding:16px 4px 10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;-webkit-user-select:none;user-select:none">
       <div style="display:flex;align-items:center;gap:8px">${todayBadge}${entryCount}</div>
       <div style="display:flex;align-items:center;gap:12px">
-        <span style="font-family:var(--mono);font-size:16px;color:var(--accent);font-weight:600">${dayBill.toFixed(2)}</span>
-        ${dayNonBill > 0 ? `<span style="font-family:var(--mono);font-size:16px;color:var(--danger);font-weight:600">${dayNonBill.toFixed(2)}</span>` : ''}
+        <span style="font-family:var(--font);font-size:16px;color:var(--accent);font-weight:600">${dayBill.toFixed(2)}</span>
+        ${dayNonBill > 0 ? `<span style="font-family:var(--font);font-size:16px;color:var(--danger);font-weight:600">${dayNonBill.toFixed(2)}</span>` : ''}
         <button onclick="event.stopPropagation();exportDay('${key}')" style="background:var(--accent-light);border:1px solid var(--accent-mid);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;padding:5px 12px;border-radius:8px;font-family:var(--font)">Export</button>
         <div style="position:relative;display:inline-block" onclick="event.stopPropagation()">
           <button onclick="toggleDayMenu(this)" style="background:none;border:none;color:var(--text-muted);font-size:18px;font-weight:700;cursor:pointer;padding:0 4px;line-height:1;letter-spacing:2px">⋯</button>
@@ -1436,7 +1436,7 @@ function renderToday(){
       const dispM = String(Math.abs(totalMin)%60).padStart(2,'0');
       const timeStr = totalMin > 0 ? `${dispH}:${dispM}` : `0:00`;
       const timeColor = e.billable===false ? 'color:var(--danger)' : '';
-      html += `<div class="entry-card"><div class="entry-top"><span class="entry-matter">${e.matterName}</span><div style="text-align:right;flex-shrink:0;margin-left:12px"><span class="entry-time" style="margin-left:0;${timeColor}">${e.hours} h${eb}</span><div style="font-size:16px;color:var(--text-secondary);font-family:var(--mono);margin-top:2px">${timeStr}</div></div></div><div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Narrative</div><div class="entry-narrative ${e.narrative?'':'missing'}">${e.narrative||'No narrative — tap edit to add'}</div><div class="entry-actions" style="justify-content:flex-end"><button onclick="confirmDeleteEntry('${e.id}')" style="background:none;border:1px solid var(--danger);color:var(--danger);font-family:var(--font);font-size:15px;font-weight:600;padding:7px 14px;border-radius:var(--radius-sm);cursor:pointer">Delete</button><button class="entry-btn" onclick="editEntry('${e.id}')">Edit</button></div></div>`;
+      html += `<div class="entry-card"><div class="entry-top"><span class="entry-matter">${e.matterName}</span><div style="text-align:right;flex-shrink:0;margin-left:12px"><span class="entry-time" style="margin-left:0;${timeColor}">${e.hours} h${eb}</span><div style="font-size:16px;color:var(--text-secondary);font-variant-numeric:tabular-nums;margin-top:2px">${timeStr}</div></div></div><div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Narrative</div><div class="entry-narrative ${e.narrative?'':'missing'}">${e.narrative||'No narrative — tap edit to add'}</div><div class="entry-actions" style="justify-content:flex-end"><button onclick="confirmDeleteEntry('${e.id}')" style="background:none;border:1px solid var(--danger);color:var(--danger);font-family:var(--font);font-size:15px;font-weight:600;padding:7px 14px;border-radius:var(--radius-sm);cursor:pointer">Delete</button><button class="entry-btn" onclick="editEntry('${e.id}')">Edit</button></div></div>`;
     });
     html += '</div>';
   });
