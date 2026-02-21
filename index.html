@@ -670,10 +670,10 @@ function recomputeSections() {
   cachedActiveIds = new Set(); cachedRecentIds = new Set(); cachedRestIds = new Set();
   matters.forEach(m => {
     const t = timers[m.id];
-    // Active: has unsaved time or narrative
+    // Active: running, has unsaved time, or narrative
     const el = getElapsed(m.id);
     const narr = (t?.narrative||'').trim();
-    if (el > 0 || narr) { cachedActiveIds.add(m.id); return; }
+    if (el > 0 || narr || t?.running) { cachedActiveIds.add(m.id); return; }
     // Excluded from recent
     if (t && t.excludeRecent) { cachedRestIds.add(m.id); return; }
     // Recent: used within 7 days
@@ -870,7 +870,7 @@ function renderTimers() {
       if(live) items+=`<div class="interval-item interval-live"><span class="interval-times">${fmtClock(live.start)} – now</span><span class="interval-duration">running</span><span></span></div>`;
       if(!completed.length&&!live) items='<div style="font-size:14px;color:var(--text-secondary);padding:10px 0">No intervals yet</div>';
       const narrTextarea = `<div style="padding:12px 16px 0"><div style="font-size:13px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Narrative</div><textarea class="narrative-input" id="narrInput_${m.id}" rows="1" placeholder="Paste narrative here..." oninput="updateNarr('${m.id}',this.value);autoGrow(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" onblur="stripPeriod(this,'${m.id}')" onfocus="autoGrow(this)" style="margin-top:0">${t?.narrative||''}</textarea></div>`;
-      ivHtml=`<div class="intervals-panel${isOpen?' open':''}" id="ivPanel_${m.id}">${narrTextarea}<div style="padding:0 16px"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}" onclick="directEditAdjust('${m.id}',${inc})">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours</span></div><div style="padding-top:10px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center"><button onclick="openTransferTime('${m.id}')" style="background:none;border:none;color:#2563EB;font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Transfer matter</button><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Discard</button></div></div></div><div class="iv-collapse-bar" onclick="toggleIv('${m.id}')"><svg width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></div></div>`;
+      ivHtml=`<div class="intervals-panel${isOpen?' open':''}" id="ivPanel_${m.id}">${narrTextarea}<div style="padding:0 16px"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}" onclick="directEditAdjust('${m.id}',${inc})">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours</span></div><div style="padding-top:10px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center"><button onclick="openTransferTime('${m.id}')" style="background:none;border:none;color:#2563EB;font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Transfer to matter</button><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Discard</button></div></div></div><div class="iv-collapse-bar" onclick="toggleIv('${m.id}')"><svg width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></div></div>`;
     }
 
     const menuItems = `
