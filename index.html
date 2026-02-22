@@ -579,10 +579,11 @@
     <div class="add-matter-form" style="margin-top:0">
       <div class="backup-status" id="cloudStatus"></div>
       <div id="cloudConnected" style="display:none">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
           <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></div>
           <span style="font-size:16px;font-weight:600;color:var(--accent)">Connected to Dropbox</span>
         </div>
+        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:12px" id="cloudDeviceLabel"></div>
         <div style="font-size:16px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5" id="cloudLastSync">Hourly backups: text (48h) + full data snapshots (48h hourly, then daily for 14 days).</div>
         <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:8px;font-size:14px" onclick="cloudUploadNow()">Upload Now</button>
         <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:8px;font-size:14px" onclick="cloudRestore()">Restore from Cloud</button>
@@ -2414,6 +2415,10 @@ const DROPBOX_REDIRECT_URI = 'https://mal5z.github.io/timekeeper/';
 
 function getCloudConfig() { return loadData(CLOUD_KEY, null); }
 function saveCloudConfig(cfg) { saveData(CLOUD_KEY, cfg); }
+function getDevicePath() {
+  const cfg = getCloudConfig();
+  return cfg && cfg.deviceName ? '/' + cfg.deviceName : '';
+}
 
 // PKCE helpers
 function generateCodeVerifier() {
@@ -2467,14 +2472,12 @@ async function handleOAuthRedirect() {
   // Switch to Settings so user sees what's happening
   switchScreen('settings');
   showCloudStatus('Connecting to Dropbox…', '');
-  // Scroll to cloud backup section
   setTimeout(() => {
     const cloudSection = document.getElementById('cloudStatus');
     if (cloudSection) cloudSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, 100);
 
   try {
-    // Exchange code for tokens
     const resp = await fetch('https://api.dropboxapi.com/oauth2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -2494,7 +2497,7 @@ async function handleOAuthRedirect() {
 
     const tokens = await resp.json();
 
-    // Save config
+    // Save config (without deviceName yet)
     saveCloudConfig({
       appKey: pending.appKey,
       accessToken: tokens.access_token,
@@ -2504,38 +2507,10 @@ async function handleOAuthRedirect() {
     });
 
     localStorage.removeItem('tk_cloud_pending');
-    renderCloudUI();
+    showCloudStatus('✓ Authorized! Choose a device profile…', 'success');
 
-    // Check for existing backups to offer restore
-    try {
-      const checkToken = await getValidAccessToken();
-      if (checkToken) {
-        const listResp = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${checkToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: '', recursive: false })
-        });
-        if (listResp.ok) {
-          const listing = await listResp.json();
-          const jsonFiles = (listing.entries || [])
-            .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-data-') && e.name.endsWith('.json'))
-            .sort((a, b) => new Date(b.server_modified || 0) - new Date(a.server_modified || 0));
-          if (jsonFiles.length > 0) {
-            const newest = jsonFiles[0];
-            const newestDate = new Date(newest.server_modified);
-            const fmtD = newestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            const fmtT = newestDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-            document.getElementById('modalTitle').textContent = 'Backups Found';
-            document.getElementById('modalBody').innerHTML = `<p style="font-size:16px;color:var(--text-secondary);line-height:1.6">Found ${jsonFiles.length} backup${jsonFiles.length > 1 ? 's' : ''} in Dropbox. The most recent is from <strong>${fmtD} at ${fmtT}</strong>.</p><p style="font-size:16px;color:var(--text-secondary);line-height:1.6;margin-top:8px">Would you like to restore from a backup?</p>`;
-            document.getElementById('modalButtons').innerHTML = `<button class="btn btn-primary" onclick="closeModal();cloudRestore()">Choose a Backup</button><button class="btn btn-secondary" onclick="closeModal()">Skip — Start Fresh</button>`;
-            document.getElementById('modal').classList.add('visible');
-            return true;
-          }
-        }
-      }
-    } catch (e) { console.warn('Backup check after connect failed:', e); }
-
-    showCloudStatus('✓ Connected to Dropbox! Hourly backups are now active.', 'success');
+    // Now show device picker
+    await cloudShowDevicePicker();
     return true;
 
   } catch (err) {
@@ -2543,6 +2518,150 @@ async function handleOAuthRedirect() {
     localStorage.removeItem('tk_cloud_pending');
     return false;
   }
+}
+
+// List existing device folders and let user pick or create one
+async function cloudShowDevicePicker() {
+  const token = await getValidAccessToken();
+  if (!token) return;
+
+  let existingDevices = [];
+  try {
+    const listResp = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '', recursive: false })
+    });
+    if (listResp.ok) {
+      const listing = await listResp.json();
+      // Find device folders (folders at root level)
+      const folders = (listing.entries || []).filter(e => e['.tag'] === 'folder');
+      // For each folder, peek for the newest backup to show last-active info
+      for (const folder of folders) {
+        try {
+          const subResp = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: folder.path_lower, recursive: false })
+          });
+          if (subResp.ok) {
+            const subListing = await subResp.json();
+            const jsonFiles = (subListing.entries || [])
+              .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-data-') && e.name.endsWith('.json'))
+              .sort((a, b) => new Date(b.server_modified || 0) - new Date(a.server_modified || 0));
+            const lastBackup = jsonFiles.length > 0 ? new Date(jsonFiles[0].server_modified) : null;
+            existingDevices.push({ name: folder.name, backupCount: jsonFiles.length, lastBackup });
+          }
+        } catch (e) { existingDevices.push({ name: folder.name, backupCount: 0, lastBackup: null }); }
+      }
+
+      // Also check for legacy files at root (pre-device-folder backups)
+      const legacyFiles = (listing.entries || [])
+        .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-data-') && e.name.endsWith('.json'));
+      if (legacyFiles.length > 0) {
+        existingDevices.unshift({
+          name: '__legacy__',
+          backupCount: legacyFiles.length,
+          lastBackup: new Date(legacyFiles.sort((a, b) => new Date(b.server_modified || 0) - new Date(a.server_modified || 0))[0].server_modified),
+          isLegacy: true
+        });
+      }
+    }
+  } catch (e) { console.warn('Could not list device folders:', e); }
+
+  // Build the modal
+  let bodyHtml = '';
+
+  if (existingDevices.length > 0) {
+    bodyHtml += '<p style="font-size:16px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">Found existing device profiles in Dropbox. Pick one to resume, or create a new one.</p>';
+    bodyHtml += '<div style="margin-bottom:16px">';
+    existingDevices.forEach(d => {
+      if (d.isLegacy) {
+        // Show legacy files as informational note
+        bodyHtml += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px">
+          <div style="font-size:14px;color:var(--text-secondary);line-height:1.5">${d.backupCount} backup${d.backupCount !== 1 ? 's' : ''} from before device profiles. Create a device name below — you can restore these old backups afterward.</div>
+        </div>`;
+        return;
+      }
+      const label = d.name;
+      let detail = `${d.backupCount} backup${d.backupCount !== 1 ? 's' : ''}`;
+      if (d.lastBackup) {
+        const ago = Math.floor((Date.now() - d.lastBackup.getTime()) / 3600000);
+        detail += ago < 1 ? ' · last: just now' : ago < 24 ? ` · last: ${ago}h ago` : ` · last: ${d.lastBackup.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      }
+      bodyHtml += `<button onclick="cloudPickDevice('${d.name.replace(/'/g, "\\'")}')" style="display:block;width:100%;text-align:left;background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:var(--font)">
+        <div style="font-size:16px;font-weight:600;color:var(--text)">${label}</div>
+        <div style="font-size:14px;color:var(--text-secondary);margin-top:2px">${detail}</div>
+      </button>`;
+    });
+    bodyHtml += '</div>';
+  } else {
+    bodyHtml += '<p style="font-size:16px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">Name this device to organize your backups. Each device gets its own folder in Dropbox.</p>';
+  }
+
+  bodyHtml += `<div style="display:flex;gap:8px;align-items:center">
+    <input type="text" id="cloudDeviceNameInput" placeholder="New device name (e.g. iPhone, Work Mac)" autocomplete="off" style="flex:1">
+    <button class="btn btn-primary" style="flex:none;white-space:nowrap" onclick="cloudPickDevice(document.getElementById('cloudDeviceNameInput').value.trim())">Create</button>
+  </div>`;
+
+  document.getElementById('modalTitle').textContent = 'Choose Device';
+  document.getElementById('modalBody').innerHTML = bodyHtml;
+  document.getElementById('modalButtons').innerHTML = '<button class="btn btn-secondary" onclick="closeModal();cloudDisconnect()">Cancel</button>';
+  document.getElementById('modal').classList.add('visible');
+}
+
+async function cloudPickDevice(deviceName) {
+  if (!deviceName) {
+    showCloudStatus('Enter a device name.', 'error');
+    return;
+  }
+
+  const cfg = getCloudConfig();
+  if (!cfg) return;
+
+  // Sanitize: strip slashes, limit length
+  deviceName = deviceName.replace(/[\/\\'"]/g, '').trim().substring(0, 50);
+  if (!deviceName) {
+    showCloudStatus('Enter a valid device name.', 'error');
+    return;
+  }
+  cfg.deviceName = deviceName;
+
+  saveCloudConfig(cfg);
+  closeModal();
+  renderCloudUI();
+
+  // Check for backups in this device folder
+  const token = await getValidAccessToken();
+  if (!token) { showCloudStatus('✓ Connected! Hourly backups active.', 'success'); return; }
+
+  const devicePath = getDevicePath();
+  try {
+    const listResp = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: devicePath || '', recursive: false })
+    });
+    if (listResp.ok) {
+      const listing = await listResp.json();
+      const jsonFiles = (listing.entries || [])
+        .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-data-') && e.name.endsWith('.json'))
+        .sort((a, b) => new Date(b.server_modified || 0) - new Date(a.server_modified || 0));
+      if (jsonFiles.length > 0) {
+        const newest = jsonFiles[0];
+        const newestDate = new Date(newest.server_modified);
+        const fmtD = newestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const fmtT = newestDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        document.getElementById('modalTitle').textContent = 'Backups Found';
+        document.getElementById('modalBody').innerHTML = `<p style="font-size:16px;color:var(--text-secondary);line-height:1.6">Found ${jsonFiles.length} backup${jsonFiles.length > 1 ? 's' : ''} for <strong>${cfg.deviceName || 'this device'}</strong>. Most recent: <strong>${fmtD} at ${fmtT}</strong>.</p><p style="font-size:16px;color:var(--text-secondary);line-height:1.6;margin-top:8px">Would you like to restore from a backup?</p>`;
+        document.getElementById('modalButtons').innerHTML = `<button class="btn btn-primary" onclick="closeModal();cloudRestore()">Choose a Backup</button><button class="btn btn-secondary" onclick="closeModal()">Skip — Start Fresh</button>`;
+        document.getElementById('modal').classList.add('visible');
+        return;
+      }
+    }
+  } catch (e) { /* folder might not exist yet — that's fine */ }
+
+  showCloudStatus(`✓ Connected as "${cfg.deviceName}"! Hourly backups active.`, 'success');
 }
 
 function cloudDisconnect() {
@@ -2594,7 +2713,7 @@ function hasRealData() {
 
 async function cloudUploadBackup() {
   const cfg = getCloudConfig();
-  if (!cfg) return false;
+  if (!cfg || !cfg.deviceName) return false;
 
   if (!hasRealData()) { console.log('Cloud upload skipped: no real data'); return false; }
 
@@ -2679,7 +2798,7 @@ async function cloudUploadBackup() {
 
   // File path with timestamp
   const dateStr = now.toISOString().slice(0, 13).replace(/T/, '-');
-  const path = `/timekeeper-backup-${dateStr}.txt`;
+  const path = `${getDevicePath()}/timekeeper-backup-${dateStr}.txt`;
 
   const resp = await fetch('https://content.dropboxapi.com/2/files/upload', {
     method: 'POST',
@@ -2719,7 +2838,7 @@ async function cloudUploadJsonBackup(token, cfg) {
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 13).replace('T', '-'); // YYYY-MM-DD-HH
     const jsonData = JSON.stringify({ matters, timers, entries, exportedAt: now.toISOString() });
-    const jsonPath = `/timekeeper-data-${dateStr}.json`;
+    const jsonPath = `${getDevicePath()}/timekeeper-data-${dateStr}.json`;
     const resp = await fetch('https://content.dropboxapi.com/2/files/upload', {
       method: 'POST',
       headers: {
@@ -2745,7 +2864,7 @@ async function cloudPruneOld() {
     const listResp = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: '', recursive: false })
+      body: JSON.stringify({ path: getDevicePath() || '', recursive: false })
     });
 
     if (!listResp.ok) return;
@@ -2845,7 +2964,7 @@ async function cloudUploadNow() {
   }
 }
 
-async function cloudRestore() {
+async function cloudRestore(overridePath) {
   const token = await getValidAccessToken();
   if (!token) {
     document.getElementById('modalTitle').textContent = 'Connection Error';
@@ -2855,11 +2974,13 @@ async function cloudRestore() {
     return;
   }
 
+  const searchPath = overridePath !== undefined ? overridePath : (getDevicePath() || '');
+
   try {
     const listResp = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: '', recursive: false })
+      body: JSON.stringify({ path: searchPath, recursive: false })
     });
     if (!listResp.ok) throw new Error('Could not list Dropbox files');
     const listing = await listResp.json();
@@ -2921,12 +3042,68 @@ async function cloudRestore() {
     listHtml += '</div>';
 
     document.getElementById('modalTitle').textContent = 'Restore from Cloud';
-    document.getElementById('modalBody').innerHTML = `<p style="font-size:15px;color:var(--text-secondary);margin-bottom:12px">Select a backup to restore:</p>${listHtml}`;
+    const cfg = getCloudConfig();
+    const deviceLabel = cfg && cfg.deviceName ? ` (${cfg.deviceName})` : '';
+    document.getElementById('modalBody').innerHTML = `<p style="font-size:15px;color:var(--text-secondary);margin-bottom:12px">Backups for this device${deviceLabel}:</p>${listHtml}
+    <div style="text-align:center;margin-top:12px"><a href="#" onclick="event.preventDefault();cloudRestoreOtherDevices()" style="font-size:14px;color:var(--blue);text-decoration:none">Browse other devices…</a></div>`;
     document.getElementById('modalButtons').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>';
     document.getElementById('modal').classList.add('visible');
 
   } catch (err) {
     document.getElementById('modalTitle').textContent = 'Restore Failed';
+    document.getElementById('modalBody').innerHTML = `<p style="color:var(--danger)">${err.message}</p>`;
+    document.getElementById('modalButtons').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">OK</button>';
+    document.getElementById('modal').classList.add('visible');
+  }
+}
+
+async function cloudRestoreOtherDevices() {
+  const token = await getValidAccessToken();
+  if (!token) return;
+
+  try {
+    const listResp = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: '', recursive: false })
+    });
+    if (!listResp.ok) throw new Error('Could not list Dropbox files');
+    const listing = await listResp.json();
+
+    const folders = (listing.entries || []).filter(e => e['.tag'] === 'folder');
+    const rootJsonFiles = (listing.entries || [])
+      .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-data-') && e.name.endsWith('.json'));
+
+    let bodyHtml = '<div style="margin-bottom:8px">';
+
+    folders.forEach(f => {
+      const cfg = getCloudConfig();
+      const isCurrent = cfg && cfg.deviceName === f.name;
+      bodyHtml += `<button onclick="closeModal();cloudRestore('${f.path_lower.replace(/'/g, "\\'")}')" style="display:block;width:100%;text-align:left;background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:var(--font)">
+        <div style="font-size:16px;font-weight:600;color:var(--text)">${f.name}${isCurrent ? ' (this device)' : ''}</div>
+      </button>`;
+    });
+
+    if (rootJsonFiles.length > 0) {
+      bodyHtml += `<button onclick="closeModal();cloudRestore('')" style="display:block;width:100%;text-align:left;background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:var(--font)">
+        <div style="font-size:16px;font-weight:600;color:var(--text)">Legacy backups</div>
+        <div style="font-size:14px;color:var(--text-secondary);margin-top:2px">${rootJsonFiles.length} backup${rootJsonFiles.length !== 1 ? 's' : ''} (before device profiles)</div>
+      </button>`;
+    }
+
+    bodyHtml += '</div>';
+
+    if (folders.length === 0 && rootJsonFiles.length === 0) {
+      bodyHtml = '<p style="color:var(--text-secondary)">No backups found in any device folder.</p>';
+    }
+
+    document.getElementById('modalTitle').textContent = 'Choose Device to Restore';
+    document.getElementById('modalBody').innerHTML = bodyHtml;
+    document.getElementById('modalButtons').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>';
+    document.getElementById('modal').classList.add('visible');
+
+  } catch (err) {
+    document.getElementById('modalTitle').textContent = 'Error';
     document.getElementById('modalBody').innerHTML = `<p style="color:var(--danger)">${err.message}</p>`;
     document.getElementById('modalButtons').innerHTML = '<button class="btn btn-secondary" onclick="closeModal()">OK</button>';
     document.getElementById('modal').classList.add('visible');
@@ -3032,18 +3209,36 @@ function renderCloudUI() {
 
   if (!connectedEl || !setupEl) return;
 
-  if (connected) {
+  if (connected && cfg.deviceName) {
     connectedEl.style.display = 'block';
     setupEl.style.display = 'none';
+    const deviceLabel = document.getElementById('cloudDeviceLabel');
+    if (deviceLabel) deviceLabel.textContent = `Device: ${cfg.deviceName}`;
     const lastSync = document.getElementById('cloudLastSync');
     if (cfg.lastUpload) {
       const mins = Math.floor((Date.now() - cfg.lastUpload) / 60000);
       const ago = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : `${Math.floor(mins/60)}h ${mins%60}m ago`;
       lastSync.textContent = `Last upload: ${ago}.`;
     }
+  } else if (connected && !cfg.deviceName) {
+    // Tokens exist but no device set — incomplete setup
+    connectedEl.style.display = 'none';
+    setupEl.style.display = 'block';
+    setupEl.innerHTML = `<div style="font-size:16px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px">
+      Connected to Dropbox but no device profile set.
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="cloudShowDevicePicker()">Choose Device</button>`;
   } else {
     connectedEl.style.display = 'none';
     setupEl.style.display = 'block';
+    // Restore original setup UI (may have been replaced by device picker prompt)
+    setupEl.innerHTML = `<div style="font-size:16px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px">
+      Automatically backs up your data to Dropbox every hour. One tap to connect.
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="cloudConnect()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px"><path d="M6 2l6 3.6L18 2l6 3.6-6 3.6 6 3.6-6 3.6-6-3.6-6 3.6L0 13.2l6-3.6L0 6 6 2zm6 15.6l-6 3.6 6 3.6 6-3.6-6-3.6z"/></svg>
+      Connect to Dropbox
+    </button>`;
   }
 }
 
