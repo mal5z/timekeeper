@@ -640,7 +640,60 @@ matters.forEach(m => {
 });
 saveData('tk_timers', timers);
 
-let cachedActiveIds = new Set();
+// === Native iOS Bridge ===
+const isNativeApp = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.timerBridge);
+
+function notifyNative(data) {
+  if (isNativeApp) {
+    window.webkit.messageHandlers.timerBridge.postMessage(data);
+  }
+}
+
+function getRecentTimersList() {
+  const runningId = Object.keys(timers).find(id => timers[id].running);
+  return matters
+    .filter(m => timers[m.id] && timers[m.id].lastUsed > 0 && m.id !== runningId)
+    .sort((a, b) => (timers[b.id].lastUsed || 0) - (timers[a.id].lastUsed || 0))
+    .slice(0, 5)
+    .map(m => ({
+      matterId: m.id,
+      matterName: m.name,
+      billingNumber: (m.clientNumber && m.matterNumber) ? m.clientNumber + '-' + m.matterNumber : '',
+      taskLabel: m.taskLabel || ''
+    }));
+}
+
+function notifyNativeState() {
+  const runningId = Object.keys(timers).find(id => timers[id].running);
+  const runningMatter = runningId ? matters.find(m => m.id === runningId) : null;
+  const runningTimer = runningId ? timers[runningId] : null;
+
+  let priorElapsedMs = 0;
+  let startTime = null;
+  if (runningTimer && runningTimer.running) {
+    const openInterval = runningTimer.intervals.find(i => !i.end);
+    startTime = openInterval ? openInterval.start : Date.now();
+    priorElapsedMs = runningTimer.intervals
+      .filter(i => i.end)
+      .reduce((sum, i) => sum + (i.end - i.start), 0)
+      + (runningTimer.manualAdjustMs || 0);
+  }
+
+  notifyNative({
+    action: 'syncState',
+    running: runningMatter ? {
+      matterId: runningId,
+      matterName: runningMatter.name,
+      billingNumber: (runningMatter.clientNumber && runningMatter.matterNumber) ? runningMatter.clientNumber + '-' + runningMatter.matterNumber : '',
+      taskLabel: runningMatter.taskLabel || '',
+      startTime: startTime,
+      priorElapsedMs: priorElapsedMs,
+      increment: runningMatter.increment || 0.10
+    } : null,
+    recentTimers: getRecentTimersList()
+  });
+}
+// === End Native iOS Bridge ===
 let cachedRecentIds = new Set();
 let cachedRestIds = new Set();
 
@@ -694,10 +747,14 @@ function fmtDur(ms) {
 function toggleTimer(mid, e) {
   if(e) e.stopPropagation();
   const t=timers[mid];
-  if(t.running) { const iv=t.intervals.find(i=>!i.end); if(iv) iv.end=Date.now(); t.running=false; }
-  else {
+  if(t.running) {
+    const iv=t.intervals.find(i=>!i.end); if(iv) iv.end=Date.now(); t.running=false;
+    notifyNative({ action: 'timerPaused', matterId: mid, elapsedMs: getElapsed(mid) });
+    notifyNative({ action: 'syncState', running: null, recentTimers: getRecentTimersList() });
+  } else {
     Object.keys(timers).forEach(id=>{ if(id!==mid&&timers[id].running){ const iv=timers[id].intervals.find(i=>!i.end); if(iv) iv.end=Date.now(); timers[id].running=false; }});
     t.intervals.push({start:Date.now(),end:null}); t.running=true; t.lastUsed=Date.now(); delete t.excludeRecent;
+    notifyNativeState();
   }
   saveData('tk_timers',timers);
   recomputeSections();
@@ -734,6 +791,8 @@ function saveEntry(mid) {
 
   recomputeSections(); flipRenderTimers();
   autoBackup();
+  notifyNative({ action: 'timerSaved', matterId: mid });
+  notifyNativeState();
 }
 
 // Section collapse state
@@ -1251,6 +1310,8 @@ function discardTimer(mid) {
     saveData('tk_timers', timers);
     recomputeSections();
     flipRenderTimers();
+    notifyNative({ action: 'timerReset', matterId: mid });
+    notifyNativeState();
   });
 }
 
@@ -3283,6 +3344,9 @@ if (_isOAuthReturn) {
   renderTimers();
 }
 renderCloudUI();
+
+// Sync state to native app on load
+notifyNativeState();
 
 // Handle OAuth redirect from Dropbox (if returning from authorization)
 if (_isOAuthReturn) handleOAuthRedirect();
