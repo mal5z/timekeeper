@@ -566,6 +566,13 @@
 </div>
 
 <div class="screen" id="settingsScreen">
+  <div class="settings-section" id="liveActivitySection" style="display:none">
+    <h2>Live Activity</h2>
+    <div class="add-matter-form" style="margin-top:0">
+      <div style="font-size:16px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5">If you dismissed the Lock Screen timer card, tap below to bring it back.</div>
+      <button class="btn btn-secondary" id="restartLABtn" style="width:100%;justify-content:center;font-size:15px" onclick="restartLiveActivity()">Restart Live Activity</button>
+    </div>
+  </div>
   <div class="settings-section">
     <h2>Local Backup</h2>
     <div class="add-matter-form" style="margin-top:0">
@@ -652,7 +659,7 @@ function notifyNative(data) {
 function getRecentTimersList() {
   const runningId = Object.keys(timers).find(id => timers[id].running);
   return matters
-    .filter(m => timers[m.id] && timers[m.id].lastUsed > 0 && m.id !== runningId)
+    .filter(m => timers[m.id] && timers[m.id].lastUsed > 0 && m.id !== runningId && !timers[m.id].excludeRecent)
     .sort((a, b) => (timers[b.id].lastUsed || 0) - (timers[a.id].lastUsed || 0))
     .slice(0, 5)
     .map(m => ({
@@ -692,6 +699,21 @@ function notifyNativeState() {
     } : null,
     recentTimers: getRecentTimersList()
   });
+}
+
+function restartLiveActivity() {
+  notifyNative({ action: 'restartLiveActivity' });
+  var btn = document.getElementById('restartLABtn');
+  if (btn) {
+    btn.textContent = 'Live Activity Restarted';
+    btn.style.color = 'var(--accent)';
+    btn.style.borderColor = 'var(--accent)';
+    setTimeout(function() {
+      btn.textContent = 'Restart Live Activity';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 2000);
+  }
 }
 // === End Native iOS Bridge ===
 let cachedRecentIds = new Set();
@@ -908,7 +930,7 @@ function renderTimers() {
       if(live) items+=`<div class="interval-item interval-live"><span class="interval-times">${fmtClock(live.start)} – now</span><span class="interval-duration">running</span><span></span></div>`;
       if(!completed.length&&!live) items='<div style="font-size:14px;color:var(--text-secondary);padding:10px 0">No intervals yet</div>';
       const narrTextarea = `<div style="padding:12px 16px 0"><div style="font-size:13px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Narrative</div><textarea class="narrative-input" id="narrInput_${m.id}" rows="1" placeholder="Paste narrative here..." oninput="updateNarr('${m.id}',this.value);autoGrow(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" onblur="stripPeriod(this,'${m.id}')" onfocus="autoGrow(this)" style="margin-top:0">${t?.narrative||''}</textarea></div>`;
-      ivHtml=`<div class="intervals-panel${isOpen?' open':''}" id="ivPanel_${m.id}">${narrTextarea}<div style="padding:0 16px"><div class="intervals-header">Intervals</div>${items}<div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}" onclick="directEditAdjust('${m.id}',${inc})">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours</span></div><div style="padding-top:10px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center"><button onclick="openTransferTime('${m.id}')" style="background:none;border:none;color:#2563EB;font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Transfer to matter</button><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Discard</button></div></div></div><div class="iv-collapse-bar" onclick="toggleIv('${m.id}')"><svg width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></div></div>`;
+      ivHtml=`<div class="intervals-panel${isOpen?' open':''}" id="ivPanel_${m.id}">${narrTextarea}<div style="padding:0 16px"><div class="manual-adjust"><span class="manual-adjust-label">Adjust</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',-${inc})">−</button><span class="adjust-display" id="adjDisp_${m.id}" onclick="directEditAdjust('${m.id}',${inc})">${adjD}</span><button class="adjust-step-btn" onclick="stepAdjust('${m.id}',${inc})">+</button><span class="adjust-hint">hours</span></div><div style="padding-top:10px;border-top:1px solid var(--border);margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center"><button onclick="openTransferTime('${m.id}')" style="background:none;border:none;color:#2563EB;font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Transfer to matter</button><button onclick="discardTimer('${m.id}')" style="background:none;border:none;color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Discard</button></div></div><div class="intervals-header" style="margin-top:14px">Intervals</div>${items}</div><div class="iv-collapse-bar" onclick="toggleIv('${m.id}')"><svg width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></div></div>`;
     }
 
     const menuItems = `
@@ -3347,6 +3369,11 @@ renderCloudUI();
 
 // Sync state to native app on load
 notifyNativeState();
+
+// Show Live Activity section in native app only
+if (isNativeApp) {
+  document.getElementById('liveActivitySection').style.display = '';
+}
 
 // Handle OAuth redirect from Dropbox (if returning from authorization)
 if (_isOAuthReturn) handleOAuthRedirect();
