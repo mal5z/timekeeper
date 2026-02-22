@@ -2358,8 +2358,27 @@ function previewBackupSlot(idx) {
     text += 'No saved entries in this snapshot.\n\n';
   } else {
     text += `SAVED ENTRIES\n`;
+    // Group entries by date
+    const byDate = {};
     s.entries.forEach(e => {
-      text += `${e.matterName}\n${e.matterDetail || ''}\nHours: ${e.hours}\nNarrative: ${e.narrative || '[NONE]'}\n\n`;
+      const ed = new Date(e.timestamp || 0);
+      const key = ed.toLocaleDateString('en-CA'); // YYYY-MM-DD
+      if (!byDate[key]) byDate[key] = [];
+      byDate[key].push(e);
+    });
+    Object.keys(byDate).sort().reverse().forEach(dateKey => {
+      const dd = new Date(dateKey + 'T12:00:00');
+      text += `\n${dd.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}\n`;
+      text += `${'-'.repeat(30)}\n`;
+      let dayTotal = 0;
+      byDate[dateKey].forEach(e => {
+        const hrs = parseFloat(e.hours) || 0;
+        dayTotal += hrs;
+        const num = [e.clientNumber, e.matterNumber].filter(Boolean).join('-');
+        text += `${e.matterName}${num ? ' (' + num + ')' : ''}${e.taskLabel ? ' [' + e.taskLabel + ']' : ''} — ${e.hours}h\n`;
+        if (e.narrative) text += `  ${e.narrative}\n`;
+      });
+      text += `Day total: ${dayTotal.toFixed(2)}h\n`;
     });
     text += `${'━'.repeat(40)}\nTotal: ${s.entries.reduce((sum, e) => sum + parseFloat(e.hours), 0).toFixed(2)} hours\n`;
   }
