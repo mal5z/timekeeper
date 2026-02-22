@@ -2469,13 +2469,8 @@ async function handleOAuthRedirect() {
     return false;
   }
 
-  // Switch to Settings so user sees what's happening
-  switchScreen('settings');
+  // Show connecting status while token exchange happens
   showCloudStatus('Connecting to Dropbox…', '');
-  setTimeout(() => {
-    const cloudSection = document.getElementById('cloudStatus');
-    if (cloudSection) cloudSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 100);
 
   try {
     const resp = await fetch('https://api.dropboxapi.com/oauth2/token', {
@@ -2507,10 +2502,13 @@ async function handleOAuthRedirect() {
     });
 
     localStorage.removeItem('tk_cloud_pending');
-    showCloudStatus('✓ Authorized! Choose a device profile…', 'success');
+    showCloudStatus('', ''); // clear the "Connecting…" status
 
-    // Now show device picker
-    await cloudShowDevicePicker();
+    // Show success modal — device picker comes after user acknowledges
+    document.getElementById('modalTitle').textContent = '✓ Connected to Dropbox';
+    document.getElementById('modalBody').innerHTML = `<p style="font-size:16px;color:var(--text-secondary);line-height:1.6">Authorization successful. Next, choose a device name so your backups stay organized.</p>`;
+    document.getElementById('modalButtons').innerHTML = `<button class="btn btn-primary" onclick="closeModal();cloudShowDevicePicker()">Continue</button>`;
+    document.getElementById('modal').classList.add('visible');
     return true;
 
   } catch (err) {
@@ -2633,9 +2631,16 @@ async function cloudPickDevice(deviceName) {
 
   // Check for backups in this device folder
   const token = await getValidAccessToken();
-  if (!token) { showCloudStatus('✓ Connected! Hourly backups active.', 'success'); return; }
+  if (!token) {
+    showCloudStatus(`✓ Connected as "${cfg.deviceName}"! Hourly backups active.`, 'success');
+    return;
+  }
 
   const devicePath = getDevicePath();
+  let hasBackups = false;
+  let backupCount = 0;
+  let backupLabel = '';
+
   try {
     const listResp = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
       method: 'POST',
@@ -2648,20 +2653,27 @@ async function cloudPickDevice(deviceName) {
         .filter(e => e['.tag'] === 'file' && e.name.startsWith('timekeeper-data-') && e.name.endsWith('.json'))
         .sort((a, b) => new Date(b.server_modified || 0) - new Date(a.server_modified || 0));
       if (jsonFiles.length > 0) {
+        hasBackups = true;
+        backupCount = jsonFiles.length;
         const newest = jsonFiles[0];
         const newestDate = new Date(newest.server_modified);
         const fmtD = newestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const fmtT = newestDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-        document.getElementById('modalTitle').textContent = 'Backups Found';
-        document.getElementById('modalBody').innerHTML = `<p style="font-size:16px;color:var(--text-secondary);line-height:1.6">Found ${jsonFiles.length} backup${jsonFiles.length > 1 ? 's' : ''} for <strong>${cfg.deviceName || 'this device'}</strong>. Most recent: <strong>${fmtD} at ${fmtT}</strong>.</p><p style="font-size:16px;color:var(--text-secondary);line-height:1.6;margin-top:8px">Would you like to restore from a backup?</p>`;
-        document.getElementById('modalButtons').innerHTML = `<button class="btn btn-primary" onclick="closeModal();cloudRestore()">Choose a Backup</button><button class="btn btn-secondary" onclick="closeModal()">Skip — Start Fresh</button>`;
-        document.getElementById('modal').classList.add('visible');
-        return;
+        backupLabel = `${fmtD} at ${fmtT}`;
       }
     }
   } catch (e) { /* folder might not exist yet — that's fine */ }
 
-  showCloudStatus(`✓ Connected as "${cfg.deviceName}"! Hourly backups active.`, 'success');
+  // Show connection success modal
+  document.getElementById('modalTitle').textContent = `✓ Connected as "${cfg.deviceName}"`;
+  if (hasBackups) {
+    document.getElementById('modalBody').innerHTML = `<p style="font-size:16px;color:var(--text-secondary);line-height:1.6">Hourly backups are now active.</p><p style="font-size:16px;color:var(--text-secondary);line-height:1.6;margin-top:8px">Found <strong>${backupCount} existing backup${backupCount !== 1 ? 's' : ''}</strong> for this device. Most recent: <strong>${backupLabel}</strong>.</p>`;
+    document.getElementById('modalButtons').innerHTML = `<button class="btn btn-primary" onclick="closeModal();cloudRestore()">Restore a Backup</button><button class="btn btn-secondary" onclick="closeModal()">Start Fresh</button>`;
+  } else {
+    document.getElementById('modalBody').innerHTML = `<p style="font-size:16px;color:var(--text-secondary);line-height:1.6">Hourly backups are now active. Your data will be backed up to the <strong>${cfg.deviceName}</strong> folder in Dropbox.</p>`;
+    document.getElementById('modalButtons').innerHTML = `<button class="btn btn-primary" onclick="closeModal()">Done</button>`;
+  }
+  document.getElementById('modal').classList.add('visible');
 }
 
 function cloudDisconnect() {
@@ -3243,11 +3255,18 @@ function renderCloudUI() {
 }
 
 recomputeSections();
-renderTimers();
+
+// If returning from Dropbox OAuth, start on Settings — don't flash timers
+const _isOAuthReturn = new URLSearchParams(window.location.search).has('code');
+if (_isOAuthReturn) {
+  switchScreen('settings');
+} else {
+  renderTimers();
+}
 renderCloudUI();
 
 // Handle OAuth redirect from Dropbox (if returning from authorization)
-handleOAuthRedirect();
+if (_isOAuthReturn) handleOAuthRedirect();
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
