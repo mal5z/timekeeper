@@ -590,34 +590,12 @@
       </div>
       <div id="cloudSetup">
         <div style="font-size:16px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px">
-          Connect to Dropbox to back up your data or restore from an existing backup.
+          Automatically backs up your data to Dropbox every hour. One tap to connect.
         </div>
-        <details style="margin-bottom:14px">
-          <summary style="font-size:16px;font-weight:600;color:var(--blue);cursor:pointer;margin-bottom:8px">Restoring? Find your existing App Key</summary>
-          <ol style="font-size:16px;color:var(--text-secondary);line-height:1.7;padding-left:20px;margin-top:8px">
-            <li>Go to <strong>dropbox.com/developers/apps</strong></li>
-            <li>Click your existing app (e.g., "TimeKeep")</li>
-            <li>On the <strong>Settings</strong> tab, copy the <strong>App key</strong></li>
-            <li>Paste it below and connect — your backups will appear automatically</li>
-          </ol>
-        </details>
-        <details style="margin-bottom:14px">
-          <summary style="font-size:16px;font-weight:600;color:var(--blue);cursor:pointer;margin-bottom:8px">First time? Create a Dropbox App (3 min)</summary>
-          <ol style="font-size:16px;color:var(--text-secondary);line-height:1.7;padding-left:20px;margin-top:8px">
-            <li>Go to <strong>dropbox.com/developers/apps</strong></li>
-            <li>Click <strong>Create app</strong></li>
-            <li>Choose <strong>Scoped access</strong> → <strong>App folder</strong></li>
-            <li>Name it anything (e.g., "TimeKeep")</li>
-            <li>Go to the <strong>Permissions</strong> tab</li>
-            <li>Check <strong>files.content.write</strong> and <strong>files.content.read</strong></li>
-            <li>Click <strong>Submit</strong> on the permissions page</li>
-            <li>Go back to the <strong>Settings</strong> tab</li>
-            <li>Copy the <strong>App key</strong> and paste it below</li>
-          </ol>
-        </details>
-        <label style="font-size:15px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px">Dropbox App Key</label>
-        <input type="text" id="cloudAppKey" placeholder="Paste your Dropbox App Key" autocomplete="off">
-        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="cloudConnect()">Connect Dropbox</button>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="cloudConnect()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px"><path d="M6 2l6 3.6L18 2l6 3.6-6 3.6 6 3.6-6 3.6-6-3.6-6 3.6L0 13.2l6-3.6L0 6 6 2zm6 15.6l-6 3.6 6 3.6 6-3.6-6-3.6z"/></svg>
+          Connect to Dropbox
+        </button>
       </div>
     </div>
   </div>
@@ -2431,6 +2409,8 @@ function confirmRestoreSlot(idx) {
 // ===== CLOUD BACKUP (DROPBOX) =====
 
 const CLOUD_KEY = 'tk_cloud_config';
+const DROPBOX_APP_KEY = 'hss7xek0kw2jx5b';
+const DROPBOX_REDIRECT_URI = 'https://mal5z.github.io/timekeeper/';
 
 function getCloudConfig() { return loadData(CLOUD_KEY, null); }
 function saveCloudConfig(cfg) { saveData(CLOUD_KEY, cfg); }
@@ -2455,45 +2435,34 @@ function showCloudStatus(msg, type) {
   if (type === 'success') setTimeout(() => { el.className = 'backup-status'; }, 5000);
 }
 
-// Connect flow
+// Connect flow — redirect-based OAuth
 async function cloudConnect() {
-  const appKey = document.getElementById('cloudAppKey').value.trim();
-  if (!appKey) { showCloudStatus('Enter your Dropbox App Key.', 'error'); return; }
-
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-  // Store pending auth state
-  saveData('tk_cloud_pending', { appKey, codeVerifier });
+  // Store pending auth state (survives the redirect)
+  saveData('tk_cloud_pending', { appKey: DROPBOX_APP_KEY, codeVerifier });
 
-  // Open Dropbox auth in new tab
-  const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${encodeURIComponent(appKey)}&response_type=code&code_challenge=${encodeURIComponent(codeChallenge)}&code_challenge_method=S256&token_access_type=offline`;
+  // Redirect to Dropbox auth — user authorizes, Dropbox redirects back with ?code=
+  const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${encodeURIComponent(DROPBOX_APP_KEY)}&response_type=code&code_challenge=${encodeURIComponent(codeChallenge)}&code_challenge_method=S256&token_access_type=offline&redirect_uri=${encodeURIComponent(DROPBOX_REDIRECT_URI)}`;
 
-  // Show instructions and code input
-  document.getElementById('cloudSetup').innerHTML = `
-    <div style="font-size:15px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">
-      A Dropbox authorization page has opened. After you approve access, Dropbox will show you a <strong>code</strong>. Copy it and paste it here:
-    </div>
-    <input type="text" id="cloudAuthCode" placeholder="Paste authorization code from Dropbox" autocomplete="off" style="font-family:var(--mono);font-size:14px">
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="cloudFinishConnect()">Complete Setup</button>
-      <button class="btn btn-secondary" style="flex:none" onclick="cloudCancelConnect()">Cancel</button>
-    </div>
-    <div style="margin-top:10px">
-      <a href="${authUrl}" target="_blank" style="font-size:15px;color:var(--blue);font-weight:600;text-decoration:none">↗ Open Dropbox authorization page</a>
-    </div>`;
-
-  window.open(authUrl, '_blank');
+  window.location.href = authUrl;
 }
 
-async function cloudFinishConnect() {
-  const code = document.getElementById('cloudAuthCode').value.trim();
-  if (!code) { showCloudStatus('Paste the authorization code from Dropbox.', 'error'); return; }
+// Handle OAuth redirect — called on page load if ?code= is in URL
+async function handleOAuthRedirect() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (!code) return false;
+
+  // Clean the URL (remove ?code= so it doesn't re-trigger)
+  window.history.replaceState({}, '', window.location.pathname);
 
   const pending = loadData('tk_cloud_pending', null);
-  if (!pending) { showCloudStatus('Setup expired. Please start again.', 'error'); return; }
-
-  showCloudStatus('Connecting to Dropbox…', '');
+  if (!pending) {
+    console.warn('OAuth code received but no pending auth state');
+    return false;
+  }
 
   try {
     // Exchange code for tokens
@@ -2504,7 +2473,8 @@ async function cloudFinishConnect() {
         code: code,
         grant_type: 'authorization_code',
         client_id: pending.appKey,
-        code_verifier: pending.codeVerifier
+        code_verifier: pending.codeVerifier,
+        redirect_uri: DROPBOX_REDIRECT_URI
       })
     });
 
@@ -2550,22 +2520,20 @@ async function cloudFinishConnect() {
             document.getElementById('modalBody').innerHTML = `<p style="font-size:16px;color:var(--text-secondary);line-height:1.6">Found ${jsonFiles.length} backup${jsonFiles.length > 1 ? 's' : ''} in Dropbox. The most recent is from <strong>${fmtD} at ${fmtT}</strong>.</p><p style="font-size:16px;color:var(--text-secondary);line-height:1.6;margin-top:8px">Would you like to restore from a backup?</p>`;
             document.getElementById('modalButtons').innerHTML = `<button class="btn btn-primary" onclick="closeModal();cloudRestore()">Choose a Backup</button><button class="btn btn-secondary" onclick="closeModal()">Skip — Start Fresh</button>`;
             document.getElementById('modal').classList.add('visible');
-            return;
+            return true;
           }
         }
       }
     } catch (e) { console.warn('Backup check after connect failed:', e); }
 
     showCloudStatus('Connected! Hourly backups are now active.', 'success');
+    return true;
 
   } catch (err) {
     showCloudStatus('Connection failed: ' + err.message, 'error');
+    localStorage.removeItem('tk_cloud_pending');
+    return false;
   }
-}
-
-function cloudCancelConnect() {
-  localStorage.removeItem('tk_cloud_pending');
-  renderCloudUI();
 }
 
 function cloudDisconnect() {
@@ -3073,6 +3041,10 @@ function renderCloudUI() {
 recomputeSections();
 renderTimers();
 renderCloudUI();
+
+// Handle OAuth redirect from Dropbox (if returning from authorization)
+handleOAuthRedirect();
+
 // Register Service Worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./service-worker.js').catch(() => {});
