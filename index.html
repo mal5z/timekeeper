@@ -2432,7 +2432,7 @@ function showCloudStatus(msg, type) {
   const el = document.getElementById('cloudStatus');
   el.textContent = msg;
   el.className = 'backup-status visible' + (type ? ' ' + type : '');
-  if (type === 'success') setTimeout(() => { el.className = 'backup-status'; }, 5000);
+  if (type === 'success') setTimeout(() => { el.className = 'backup-status'; }, 8000);
 }
 
 // Connect flow — redirect-based OAuth
@@ -2463,6 +2463,15 @@ async function handleOAuthRedirect() {
     console.warn('OAuth code received but no pending auth state');
     return false;
   }
+
+  // Switch to Settings so user sees what's happening
+  switchScreen('settings');
+  showCloudStatus('Connecting to Dropbox…', '');
+  // Scroll to cloud backup section
+  setTimeout(() => {
+    const cloudSection = document.getElementById('cloudStatus');
+    if (cloudSection) cloudSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
 
   try {
     // Exchange code for tokens
@@ -2526,7 +2535,7 @@ async function handleOAuthRedirect() {
       }
     } catch (e) { console.warn('Backup check after connect failed:', e); }
 
-    showCloudStatus('Connected! Hourly backups are now active.', 'success');
+    showCloudStatus('✓ Connected to Dropbox! Hourly backups are now active.', 'success');
     return true;
 
   } catch (err) {
