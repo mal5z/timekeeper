@@ -201,18 +201,10 @@
     background: var(--blue-light); padding: 2px 8px; border-radius: 10px;
     margin-top: 4px; letter-spacing: 0.2px;
   }
-  .add-task-btn {
-    background: none; border: 1px solid var(--border); color: var(--text-muted);
-    width: 28px; height: 28px; border-radius: 8px; display: flex;
-    align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
-    transition: all 0.15s; margin-left: 8px;
-  }
-  .add-task-btn:active { background: var(--surface-inset); color: var(--text-secondary); }
-  .add-task-btn svg { width: 14px; height: 14px; }
 
   .matter-card { position: relative; }
   .card-gear-wrap {
-    position: relative; flex-shrink: 0;
+    position: relative; flex-shrink: 0; display: flex; align-items: center; gap: 4px;
   }
   .card-gear-btn {
     background: none; border: none; color: var(--text-secondary); cursor: pointer;
@@ -289,7 +281,7 @@
   }
   .narrative-input::placeholder { color: var(--text-muted); }
 
-  .narrative-row { display: flex; gap: 10px; margin-top: 10px; align-items: center; justify-content: flex-end; }
+  .narrative-row { display: flex; gap: 20px; margin-top: 10px; align-items: center; justify-content: flex-end; }
 
   .btn {
     padding: 11px 18px; border-radius: var(--radius-sm); border: none;
@@ -938,6 +930,7 @@ function renderTimers() {
     const menuItems = `
       ${isRecent ? `<button onclick="this.closest('.card-menu').style.display='none';removeFromRecent('${m.id}')" class="card-menu-item">Remove from Recent</button>` : ''}
       <button onclick="this.closest('.card-menu').style.display='none';editMatter('${m.id}')" class="card-menu-item">Edit Matter</button>
+      <button onclick="this.closest('.card-menu').style.display='none';spawnTask('${m.parentId||m.id}','${m.id}',event)" class="card-menu-item">Duplicate Timer</button>
       <button onclick="this.closest('.card-menu').style.display='none';confirmDeleteMatter('${m.id}')" class="card-menu-item" style="color:var(--danger)">Delete Matter</button>`;
 
     // Find most recent interval end across all timers and saved entries
@@ -1017,8 +1010,7 @@ function renderTimers() {
             : `<span style="color:var(--text-secondary);font-style:italic">Expand timer to add narrative…</span>`}
         </div>
         <div class="narrative-row">
-          <button onclick="saveEntry('${m.id}')" style="background:none;border:1px solid var(--border);color:var(--text-secondary);font-size:15px;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:var(--radius-sm)">Save Entry</button>
-          <button onclick="spawnTask('${m.parentId||m.id}','${m.id}',event)" style="background:none;border:1px solid var(--border);color:var(--text-secondary);font-size:15px;font-weight:600;cursor:pointer;padding:7px 12px;border-radius:var(--radius-sm)">+ Task</button>
+          <button onclick="saveEntry('${m.id}')" style="background:none;border:none;color:#2563EB;font-size:15px;font-weight:600;cursor:pointer;padding:4px 0;font-family:var(--font)">Save Entry</button>
           <button class="intervals-toggle ${isOpen?'open':''}" onclick="toggleIv('${m.id}')">
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
