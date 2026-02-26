@@ -1,4 +1,4 @@
-const CACHE_NAME = 'billable-v9';
+const CACHE_NAME = 'billable-v11';
 const ASSETS = [
   './',
   './index.html',
